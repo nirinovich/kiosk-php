@@ -47,12 +47,12 @@ class ProductController extends Controller
                         foreach($varianteData['valeurs_custom'] as $custom){
                             // 1. Cherche l'attribut (ex:"Matière")
                             $attribut = Attribut::firstOrCreate([
-                                'nom_attribut' => $custom['nom_attribut']
+                                'nom_attribut' => $custom['attribut']
                             ]);
                             // 2. Cherche la valeur (ex:"Coton")
                             $valeur = ValeurAttribut::firstOrCreate([
                                 'id_attribut' => $attribut->id_attribut,
-                                'nom_valeur' => $custom['nom_valeur']
+                                'nom_valeur' => $custom['valeur']
                             ]);
                             $idsAAjouter[] = $valeur->id_valeur;
                         }
@@ -66,23 +66,70 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('message','Product created');
     }
 
-    public function edit(ProduitModele $produit_modele){
-        return Inertia::render('Products/Edit', compact('produit_modele'));
+    public function edit($id)
+    {
+        $produit_modele = ProduitModele::with(['variantes.valeurs'])->findOrFail($id);
+        $attributs = Attribut::with('valeurs')->get();
+
+        return Inertia::render('Products/Edit', [
+            'produit_modele' => $produit_modele,
+            'attributs' => $attributs
+        ]);
     }
 
-    public function update(Request $request, ProduitModele $produit_modele){
-        $request ->validate([
+    public function update(Request $request, ProduitModele $produit_modele)
+    {
+        $request->validate([
             'name' => 'required|string|max:255',
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
-        ]);
-        $produit_modele->update([
-            'name' => $request->input('name'),
-            'prix_standard' => $request->input('prix_standard'),
-            'description' => $request->input('description'),
+            
+            'variantes' => 'array',
+            'variantes.*.id_variante' => 'nullable|integer', 
+            'variantes.*.sku' => 'nullable|string|max:255',
+            'variantes.*.surcout' => 'nullable|numeric',
+            'variantes.*.valeurs_ids' => 'array',
         ]);
 
-        return redirect()->route('products.index')->with('message','Product updated');
+        DB::transaction(function () use ($request, $produit_modele) {
+            $produit_modele->update([
+                'name' => $request->input('name'),
+                'prix_standard' => $request->input('prix_standard'),
+                'description' => $request->input('description'),
+            ]);
+
+            $variantesRecues = $request->input('variantes', []);
+            $idsVariantesAGarder = collect($variantesRecues)
+                ->pluck('id_variante')
+                ->filter() // Retire les valeurs nulles (les nouvelles variantes pas encore créées)
+                ->toArray();
+
+            // On supprime de la BDD les variantes qui ne sont plus présentes dans le formulaire
+            $produit_modele->variantes()->whereNotIn('id_variante', $idsVariantesAGarder)->delete();
+
+            foreach ($variantesRecues as $varianteData) {
+                if (!empty($varianteData['id_variante'])) {
+                    $variante = $produit_modele->variantes()->find($varianteData['id_variante']);
+                    if ($variante) {
+                        $variante->update([
+                            'reference_sku' => $varianteData['sku'],
+                            'surcout_prix' => $varianteData['surcout'] ?? 0,
+                        ]);
+                    }
+                } else {
+                    $variante = $produit_modele->variantes()->create([
+                        'reference_sku' => $varianteData['sku'],
+                        'surcout_prix' => $varianteData['surcout'] ?? 0,
+                    ]);
+                }
+
+                if (isset($variante) && isset($varianteData['valeurs_ids'])) {
+                    $variante->valeurs()->sync($varianteData['valeurs_ids']);
+                }
+            }
+        });
+
+        return redirect()->route('products.index')->with('message', 'Product updated successfully');
     }
 
     public function destroy(ProduitModele $produit_modele){
