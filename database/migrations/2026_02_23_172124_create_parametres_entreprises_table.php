@@ -12,7 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('parametres_entreprises', function (Blueprint $table) {
-            $table->id();
+            $table->id('id_entreprise');
+            $table->string('nom_commercial'); // Obligatoire
+            $table->string('raison_sociale')->nullable();
+            $table->string('nif', 50)->nullable();
+            $table->string('stat', 50)->nullable();
+            $table->string('capital_social', 50)->nullable();
+            $table->string('rcs_ville', 100)->nullable();
+            $table->text('adresse')->nullable();
+            $table->string('email');
+            $table->string('telephone', 20)->nullable();
+            $table->string('site_web')->nullable();
+            $table->string('logo_url')->nullable();
+            $table->string('iban', 50)->nullable();
+            $table->string('bic', 20)->nullable();
+            $table->text('note_pied_page')->nullable();
             $table->timestamps();
         });
     }
