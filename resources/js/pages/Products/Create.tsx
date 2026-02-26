@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { InfoIcon, PlusIcon, TrashIcon } from 'lucide-react';
+import { PlusIcon, TrashIcon } from 'lucide-react';
 
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -17,8 +16,25 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+interface Categorie {
+    id_categorie: number;
+    nom: string;
+}
+
+interface Valeur{
+    id_valeur : number,
+    nom_valeur: string
+}
+
+interface Attribut{
+    id_attribut: number,
+    nom: string,
+    valeurs :Valeur[]
+}
+
 interface Props{
-    attributs: any[]
+    attributs: Attribut[];
+    categories: Categorie[];
 }
 
 interface VarianteForm{
@@ -32,15 +48,17 @@ interface FormState {
     name: string;
     prix_standard: string | number;
     description: string;
+    id_categorie: number | string;
     variantes: VarianteForm[];
 }
 
-export default function Create({ attributs = [] }: Props) {
+export default function Create({ attributs, categories }: Props) {
 
     const { data, setData, post, processing, errors } = useForm<FormState>({
         name:'',
         prix_standard:'',
         description:'',
+        id_categorie: "",
         variantes: []
     });
 
@@ -68,9 +86,19 @@ export default function Create({ attributs = [] }: Props) {
         setData('variantes', nouvellesVariantes);
     }
     
-    const handleSubmit = (e: React.FormEvent) =>{
-        e.preventDefault()
-        post(products.store().url)
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        post(products.store().url, {
+            // S'il y a une erreur renvoyée par Laravel, on l'affiche dans la console
+            onError: (erreursLaravel) => {
+                console.error("🚨 Laravel a refusé l'enregistrement :", erreursLaravel);
+            },
+            // Si tout se passe bien
+            onSuccess: () => {
+                console.log("✅ Produit enregistré avec succès !");
+            }
+        });
     };
 
     const toggleValeurID = (indexVariante:number, idValeur:number) =>{
@@ -105,6 +133,22 @@ export default function Create({ attributs = [] }: Props) {
                         <div>
                             <Label htmlFor='product description'>Description</Label>
                             <Textarea placeholder="Description" value={data.description} onChange={(e) => setData('description', e.target.value)} />
+                        </div>
+                        <div>
+                            <Label htmlFor='categorie_id'>Catégorie</Label>
+                            <select
+                                id="id_categorie"
+                                value={data.id_categorie}
+                                onChange={(e) => setData('id_categorie', e.target.value as any)}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                            >
+                                <option value="">-- Choisissez une catégorie --</option>
+                                {categories.map((categorie) => (
+                                    <option key={categorie.id_categorie} value={categorie.id_categorie}>
+                                        {categorie.nom}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

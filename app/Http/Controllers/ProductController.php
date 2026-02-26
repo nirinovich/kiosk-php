@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attribut;
 use App\Models\ProduitModele;
 use App\Models\ValeurAttribut;
+use App\Models\Categorie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,7 +19,8 @@ class ProductController extends Controller
 
     public function create(){
         $attributs = Attribut::with('valeurs')->get();
-        return Inertia::render('Products/Create', compact('attributs'));
+        $categories = Categorie::all();
+        return Inertia::render('Products/Create', compact('attributs', 'categories'));
     }
 
     public function store(Request $request){
@@ -27,6 +29,7 @@ class ProductController extends Controller
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
             'variantes' => 'nullable|array',
+            'id_categorie' => 'nullable|exists:categories,id_categorie',
         ]);
 
         DB::transaction(function() use ($validated,$request){
@@ -34,6 +37,7 @@ class ProductController extends Controller
                 'name' => $validated['name'],
                 'prix_standard' => $validated['prix_standard'],
                 'description' => $validated['description'],
+                'id_categorie' => $validated['id_categorie'],
             ]);
             if(!empty($validated['variantes'])){
                 foreach($validated['variantes'] as $varianteData){
@@ -70,10 +74,12 @@ class ProductController extends Controller
     {
         $produit_modele = ProduitModele::with(['variantes.valeurs'])->findOrFail($id);
         $attributs = Attribut::with('valeurs')->get();
+        $categories = Categorie::all();
 
         return Inertia::render('Products/Edit', [
             'produit_modele' => $produit_modele,
-            'attributs' => $attributs
+            'attributs' => $attributs,
+            'categories' => $categories
         ]);
     }
 
@@ -83,6 +89,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
+            'id_categorie' => 'nullable|exists:categories,id_categorie',
             
             'variantes' => 'array',
             'variantes.*.id_variante' => 'nullable|integer', 
@@ -96,6 +103,7 @@ class ProductController extends Controller
                 'name' => $request->input('name'),
                 'prix_standard' => $request->input('prix_standard'),
                 'description' => $request->input('description'),
+                'id_categorie' => $request->input('id_categorie'),
             ]);
 
             $variantesRecues = $request->input('variantes', []);

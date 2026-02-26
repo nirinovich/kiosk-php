@@ -20,6 +20,11 @@ interface Attribut{
     valeurs :Valeur[]
 }
 
+interface Categorie {
+    id_categorie: number;
+    nom: string;
+}
+
 interface VarianteDepuisBDD {
     id_variante: number;
     reference_sku: string;
@@ -40,15 +45,17 @@ interface Produit_modele {
     name: string,
     prix_standard: number,
     description: string,
+    id_categorie: number;
     variantes: VarianteDepuisBDD[];
 }
 
 interface Props {
-    produit_modele : Produit_modele;
+    produit_modele: Produit_modele;
     attributs: Attribut[];
+    categories: Categorie[];
 }
 
-export default function Edit({produit_modele, attributs} : Props) {
+export default function Edit({produit_modele, attributs, categories} : Props) {
 
     const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -69,6 +76,7 @@ export default function Edit({produit_modele, attributs} : Props) {
         name : produit_modele.name,
         prix_standard :produit_modele.prix_standard,
         description:produit_modele.description,
+        id_categorie: produit_modele.id_categorie,
         variantes: initialVariantes
     });
 
@@ -142,6 +150,25 @@ export default function Edit({produit_modele, attributs} : Props) {
                         <div>
                             <Label htmlFor='description'>Description</Label>
                             <Textarea id='description' placeholder="Description" value={data.description} onChange={(e)=> setData('description', e.target.value)} />
+                        </div>
+                        <div>
+                            <Label htmlFor='categorie_id'>Catégorie</Label>
+                            <select
+                                id="id_categorie"
+                                value={data.id_categorie}
+                                onChange={(e) => setData('id_categorie', Number(e.target.value))}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                            >
+                                <option value="">-- Choisissez une catégorie --</option>
+                                {categories.map((categorie) => (
+                                    <option
+                                        key={categorie.id_categorie}
+                                        value={categorie.id_categorie}
+                                    >
+                                        {categorie.nom}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
