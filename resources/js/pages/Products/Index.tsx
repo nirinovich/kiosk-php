@@ -23,7 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface Produit_modele {
-    id: number,
+    id_modele: number,
     name: string,
     prix_standard: number,
     description: string

@@ -89,16 +89,7 @@ export default function Create({ attributs, categories }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
-        post(products.store().url, {
-            // S'il y a une erreur renvoyée par Laravel, on l'affiche dans la console
-            onError: (erreursLaravel) => {
-                console.error("🚨 Laravel a refusé l'enregistrement :", erreursLaravel);
-            },
-            // Si tout se passe bien
-            onSuccess: () => {
-                console.log("✅ Produit enregistré avec succès !");
-            }
-        });
+        post(products.store().url);
     };
 
     const toggleValeurID = (indexVariante:number, idValeur:number) =>{

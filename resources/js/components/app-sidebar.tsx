@@ -16,6 +16,7 @@ import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 import { dashboard } from '@/routes';
 import products from '@/routes/products';
+import clients from '@/routes/clients';
 
 const mainNavItems: NavItem[] = [
     {
@@ -25,7 +26,12 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Produits',
-        href: products.index(), //to change
+        href: products.index(),
+        icon: PackageSearch,
+    },
+    {
+        title: 'Clients',
+        href: clients.index(),
         icon: PackageSearch,
     },
 ];

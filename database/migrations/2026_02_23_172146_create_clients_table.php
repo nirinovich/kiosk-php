@@ -12,7 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('clients', function (Blueprint $table) {
-            $table->id();
+            $table->id('id_client');
+            $table->string('name');
+            $table->string('email')->unique()->nullable();
+            $table->string('telephone')->nullable();
+            $table->text('adresse')->nullable();
+            $table->enum('type_client', ['particulier', 'entreprise'])->default('particulier');
+            $table->string('nif')->nullable()->comment('(entreprises uniquement)');
+            $table->string('stat')->nullable()->comment('(entreprises uniquement)');
+            $table->string('rcs_ville')->nullable()->comment('(entreprises uniquement)');
             $table->timestamps();
         });
     }
