@@ -13,6 +13,11 @@ import { edit as editPassword } from '@/routes/user-password';
 
 const sidebarNavItems: NavItem[] = [
     {
+        title: 'Enterprise',
+        href: edit(),
+        icon: null,
+    },
+    {
         title: 'Profile',
         href: edit(),
         icon: null,
