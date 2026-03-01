@@ -120,7 +120,7 @@ function StepCompany({ company }: { company?: PageProps['company'] }) {
             <CardHeader className="text-center">
                 <CardTitle className="text-xl">Informations de l'entreprise</CardTitle>
                 <CardDescription>
-                    Commençons par enregistrer les informations de votre entreprise.
+                    Bienvenue dans Kiosk ! Commençons par enregistrer les informations simple de votre entreprise.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -203,7 +203,7 @@ function StepAdmin() {
             <CardHeader className="text-center">
                 <CardTitle className="text-xl">Créer le compte administrateur</CardTitle>
                 <CardDescription>
-                    Bienvenue dans Kiosk ! Commençons par configurer votre compte administrateur.
+                    Configurons ensuite votre compte administrateur. C'est celui qui aura accès à toutes les permissions !
                 </CardDescription>
             </CardHeader>
             <CardContent>
