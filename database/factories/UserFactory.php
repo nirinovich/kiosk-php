@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -55,5 +56,39 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
             'two_factor_confirmed_at' => now(),
         ]);
+    }
+
+    /**
+     * Assign a role by name (e.g. Role::ADMIN, Role::GERANT, Role::VENDEUR).
+     */
+    public function withRole(string $roleName): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => Role::where('nom', $roleName)->first()?->id,
+        ]);
+    }
+
+    /**
+     * Shortcut: create an admin user.
+     */
+    public function admin(): static
+    {
+        return $this->withRole(Role::ADMIN);
+    }
+
+    /**
+     * Shortcut: create a vendeur user.
+     */
+    public function vendeur(): static
+    {
+        return $this->withRole(Role::VENDEUR);
+    }
+
+    /**
+     * Shortcut: create a gérant user.
+     */
+    public function gerant(): static
+    {
+        return $this->withRole(Role::GERANT);
     }
 }

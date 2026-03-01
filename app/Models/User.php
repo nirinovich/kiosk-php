@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -22,7 +23,39 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role_id',
     ];
+
+    /**
+     * Get the role assigned to this user.
+     */
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Check if the user has the given role.
+     */
+    public function hasRole(string $roleName): bool
+    {
+        return $this->role?->nom === $roleName;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(Role::ADMIN);
+    }
+
+    public function isGerant(): bool
+    {
+        return $this->hasRole(Role::GERANT);
+    }
+
+    public function isVendeur(): bool
+    {
+        return $this->hasRole(Role::VENDEUR);
+    }
 
     /**
      * The attributes that should be hidden for serialization.
