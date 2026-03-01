@@ -37,15 +37,8 @@ class OnboardingController extends Controller
             return max(1, min($sessionStep, 2));
         }
 
-        // Admin exists but no vendeur yet AND session flag says still onboarding → step 1..4
-        $hasVendeur = User::whereHas('role', fn ($q) => $q->where('nom', Role::VENDEUR))->exists();
-
-        if (!$hasVendeur && session('onboarding_in_progress')) {
-            return max(1, min($sessionStep, 4));
-        }
-
-        // Vendeur exists and still onboarding → step 1..4
-        if ($hasVendeur && session('onboarding_in_progress')) {
+        // Admin exists and session flag says still onboarding → step 1..4
+        if (session('onboarding_in_progress')) {
             return max(1, min($sessionStep, 4));
         }
 
@@ -136,9 +129,21 @@ class OnboardingController extends Controller
             'site_web',
         ]);
 
+        // Fetch non-admin users for step 3 list
+        $utilisateurs = User::with('role')
+            ->whereHas('role', fn ($q) => $q->where('nom', '!=', Role::ADMIN))
+            ->get()
+            ->map(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'role' => $u->role?->nom,
+            ]);
+
         return Inertia::render('onboarding/index', [
             'step' => $this->resolveStep(),
             'company' => $company,
+            'utilisateurs' => $utilisateurs,
         ]);
     }
 
@@ -188,23 +193,30 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Step 3 (optional): Create a vendeur user.
+     * Step 3 (optional): Create a new utilisateur (Gérant or Vendeur).
      */
-    public function storeVendeur(Request $request): RedirectResponse
+    public function storeUtilisateur(Request $request): RedirectResponse
     {
+        $request->validate([
+            'role' => ['required', 'string', 'in:' . Role::GERANT . ',' . Role::VENDEUR],
+        ]);
+
         DB::transaction(function () use ($request) {
-            $vendeurRole = Role::where('nom', Role::VENDEUR)->firstOrFail();
+            $this->ensureRolesExist();
+
+            $role = Role::where('nom', $request->input('role'))->firstOrFail();
 
             $this->createUser->create([
                 ...$request->only('name', 'email', 'password', 'password_confirmation'),
-                'role_id' => $vendeurRole->id,
+                'role_id' => $role->id,
             ]);
         });
 
-        session(['onboarding_step' => 4]);
+        // Stay on step 3 so the user can add more team members
+        session(['onboarding_step' => 3]);
 
         return redirect()->route('onboarding.show')
-            ->with('message', 'Compte vendeur créé avec succès.');
+            ->with('message', 'Compte utilisateur créé avec succès.');
     }
 
     /**

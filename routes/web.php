@@ -16,7 +16,7 @@ Route::middleware('not-onboarded')->group(function () {
     Route::post('/onboarding/step', [OnboardingController::class, 'setStep'])->name('onboarding.setStep');
     Route::post('/onboarding/company', [OnboardingController::class, 'storeCompany'])->name('onboarding.storeCompany');
     Route::post('/onboarding/admin', [OnboardingController::class, 'storeAdmin'])->name('onboarding.storeAdmin');
-    Route::post('/onboarding/vendeur', [OnboardingController::class, 'storeVendeur'])->name('onboarding.storeVendeur');
+    Route::post('/onboarding/utilisateur', [OnboardingController::class, 'storeUtilisateur'])->name('onboarding.storeUtilisateur');
     Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
     Route::post('/onboarding/finish', [OnboardingController::class, 'finish'])->name('onboarding.finish');
 });

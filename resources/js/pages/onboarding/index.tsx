@@ -6,7 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { CheckCircle, UserPlus, ArrowRight, SkipForward, ArrowLeft } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, UserPlus, ArrowRight, SkipForward, ArrowLeft, Users } from 'lucide-react';
+import { useState } from 'react';
+
+type Utilisateur = {
+    id: number;
+    name: string;
+    email: string;
+    role: string | null;
+};
 
 type PageProps = {
     step: number;
@@ -22,13 +32,14 @@ type PageProps = {
         rcs_ville?: string | null;
         site_web?: string | null;
     } | null;
+    utilisateurs?: Utilisateur[];
     flash: {
         message?: string;
     };
 };
 
 export default function OnboardingIndex() {
-    const { step, company } = usePage<PageProps>().props;
+    const { step, company, utilisateurs = [] } = usePage<PageProps>().props;
 
     return (
         <>
@@ -43,7 +54,7 @@ export default function OnboardingIndex() {
 
                     {step === 1 && <StepCompany company={company} />}
                     {step === 2 && <StepAdmin />}
-                    {step === 3 && <StepVendeur />}
+                    {step === 3 && <StepUtilisateur utilisateurs={utilisateurs} />}
                     {step === 4 && <StepDone />}
                 </div>
             </div>
@@ -54,7 +65,7 @@ export default function OnboardingIndex() {
 /* ───────── Step indicator ───────── */
 
 function StepIndicator({ current }: { current: number }) {
-    const steps = ['Entreprise', 'Administrateur', 'Vendeur', 'Terminé'];
+    const steps = ['Entreprise', 'Administrateur', 'Utilisateurs', 'Terminé'];
     return (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {steps.map((label, i) => {
@@ -269,107 +280,205 @@ function StepAdmin() {
     );
 }
 
-/* ───────── Step 3: Create Vendeur (optional) ───────── */
+/* ───────── Step 3: Manage Utilisateurs (optional) ───────── */
 
-function StepVendeur() {
+function StepUtilisateur({ utilisateurs }: { utilisateurs: Utilisateur[] }) {
+    const [showForm, setShowForm] = useState(utilisateurs.length === 0);
+
     const form = useForm({
         name: '',
         email: '',
         password: '',
         password_confirmation: '',
+        role: '' as string,
     });
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
-        form.post('/onboarding/vendeur');
+        form.post('/onboarding/utilisateur', {
+            onSuccess: () => {
+                form.reset();
+                setShowForm(false);
+            },
+        });
     }
+
+    const roleBadgeVariant = (role: string | null) => {
+        switch (role) {
+            case 'Gérant':
+                return 'default' as const;
+            case 'Vendeur':
+                return 'secondary' as const;
+            default:
+                return 'outline' as const;
+        }
+    };
 
     return (
         <Card>
             <CardHeader className="text-center">
-                <CardTitle className="text-xl">Ajouter un vendeur</CardTitle>
+                <CardTitle className="text-xl">Gérer les utilisateurs</CardTitle>
                 <CardDescription>
-                    Créez un compte vendeur pour votre équipe. Vous pouvez aussi passer cette étape.
+                    Ajoutez les membres de votre équipe. Vous pouvez aussi passer cette étape pour le faire plus tard.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                <form onSubmit={submit} className="grid gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="vendeur-name">Nom complet</Label>
-                        <Input
-                            id="vendeur-name"
-                            value={form.data.name}
-                            onChange={(e) => form.setData('name', e.target.value)}
-                            required
-                            autoFocus
-                            placeholder="Marie Martin"
-                        />
-                        <InputError message={form.errors.name} />
+            <CardContent className="space-y-4">
+                {/* ── User list ── */}
+                {utilisateurs.length > 0 && (
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                            <Users className="size-4" />
+                            <span>Utilisateurs créés ({utilisateurs.length})</span>
+                        </div>
+                        <div className="divide-y rounded-md border">
+                            {utilisateurs.map((u) => (
+                                <div key={u.id} className="flex items-center justify-between px-3 py-2">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-medium">{u.name}</p>
+                                        <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+                                    </div>
+                                    <Badge variant={roleBadgeVariant(u.role)}>{u.role ?? '—'}</Badge>
+                                </div>
+                            ))}
+                        </div>
                     </div>
+                )}
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="vendeur-email">Adresse e-mail</Label>
-                        <Input
-                            id="vendeur-email"
-                            type="email"
-                            value={form.data.email}
-                            onChange={(e) => form.setData('email', e.target.value)}
-                            required
-                            placeholder="vendeur@monmagasin.com"
-                        />
-                        <InputError message={form.errors.email} />
+                {/* ── Empty state ── */}
+                {utilisateurs.length === 0 && !showForm && (
+                    <div className="flex flex-col items-center gap-3 py-4 text-center">
+                        <Users className="size-10 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                            Aucun utilisateur n'a encore été créé. Ajoutez votre premier collaborateur.
+                        </p>
                     </div>
+                )}
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="vendeur-password">Mot de passe</Label>
-                        <Input
-                            id="vendeur-password"
-                            type="password"
-                            value={form.data.password}
-                            onChange={(e) => form.setData('password', e.target.value)}
-                            required
-                            placeholder="Minimum 8 caractères"
-                        />
-                        <InputError message={form.errors.password} />
-                    </div>
+                {/* ── Creation form ── */}
+                {showForm ? (
+                    <form onSubmit={submit} className="grid gap-4 rounded-md border p-4">
+                        <p className="text-sm font-medium">Nouvel utilisateur</p>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="vendeur-password-confirm">Confirmer le mot de passe</Label>
-                        <Input
-                            id="vendeur-password-confirm"
-                            type="password"
-                            value={form.data.password_confirmation}
-                            onChange={(e) => form.setData('password_confirmation', e.target.value)}
-                            required
-                            placeholder="Retapez le mot de passe"
-                        />
-                    </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="user-role">Rôle</Label>
+                            <Select
+                                value={form.data.role}
+                                onValueChange={(val) => form.setData('role', val)}
+                            >
+                                <SelectTrigger id="user-role">
+                                    <SelectValue placeholder="Choisissez un rôle" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Gérant">Gérant</SelectItem>
+                                    <SelectItem value="Vendeur">Vendeur</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <InputError message={form.errors.role} />
+                        </div>
 
-                    <div className="flex gap-3">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => router.post('/onboarding/step', { step: 2 })}
-                        >
-                            <ArrowLeft className="mr-2 size-4" />
-                            Retour
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => router.post('/onboarding/skip')}
-                        >
-                            <SkipForward className="mr-2 size-4" />
-                            Passer
-                        </Button>
-                        <Button type="submit" className="flex-1" disabled={form.processing}>
-                            {form.processing ? <Spinner /> : <UserPlus className="mr-2 size-4" />}
-                            Créer le vendeur
-                        </Button>
-                    </div>
-                </form>
+                        <div className="grid gap-2">
+                            <Label htmlFor="user-name">Nom complet</Label>
+                            <Input
+                                id="user-name"
+                                value={form.data.name}
+                                onChange={(e) => form.setData('name', e.target.value)}
+                                required
+                                autoFocus
+                                placeholder="Marie Martin"
+                            />
+                            <InputError message={form.errors.name} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="user-email">Adresse e-mail</Label>
+                            <Input
+                                id="user-email"
+                                type="email"
+                                value={form.data.email}
+                                onChange={(e) => form.setData('email', e.target.value)}
+                                required
+                                placeholder="utilisateur@monmagasin.com"
+                            />
+                            <InputError message={form.errors.email} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="user-password">Mot de passe</Label>
+                            <Input
+                                id="user-password"
+                                type="password"
+                                value={form.data.password}
+                                onChange={(e) => form.setData('password', e.target.value)}
+                                required
+                                placeholder="Minimum 8 caractères"
+                            />
+                            <InputError message={form.errors.password} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="user-password-confirm">Confirmer le mot de passe</Label>
+                            <Input
+                                id="user-password-confirm"
+                                type="password"
+                                value={form.data.password_confirmation}
+                                onChange={(e) => form.setData('password_confirmation', e.target.value)}
+                                required
+                                placeholder="Retapez le mot de passe"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            {utilisateurs.length > 0 && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="flex-1"
+                                    onClick={() => {
+                                        form.reset();
+                                        setShowForm(false);
+                                    }}
+                                >
+                                    Annuler
+                                </Button>
+                            )}
+                            <Button type="submit" className="flex-1" disabled={form.processing || !form.data.role}>
+                                {form.processing ? <Spinner /> : <UserPlus className="mr-2 size-4" />}
+                                Créer l'utilisateur
+                            </Button>
+                        </div>
+                    </form>
+                ) : (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowForm(true)}
+                    >
+                        <UserPlus className="mr-2 size-4" />
+                        Ajouter un utilisateur
+                    </Button>
+                )}
+
+                {/* ── Navigation ── */}
+                <div className="flex gap-3 pt-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => router.post('/onboarding/step', { step: 2 })}
+                    >
+                        <ArrowLeft className="mr-2 size-4" />
+                        Retour
+                    </Button>
+                    <Button
+                        type="button"
+                        className="flex-1"
+                        onClick={() => router.post('/onboarding/skip')}
+                    >
+                        <ArrowRight className="mr-2 size-4" />
+                        {utilisateurs.length > 0 ? 'Continuer' : 'Passer'}
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );
