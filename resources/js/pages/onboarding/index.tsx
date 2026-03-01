@@ -283,7 +283,7 @@ function StepAdmin() {
 /* ───────── Step 3: Manage Utilisateurs (optional) ───────── */
 
 function StepUtilisateur({ utilisateurs }: { utilisateurs: Utilisateur[] }) {
-    const [showForm, setShowForm] = useState(utilisateurs.length === 0);
+    const [showForm, setShowForm] = useState(false);
 
     const form = useForm({
         name: '',
@@ -324,12 +324,12 @@ function StepUtilisateur({ utilisateurs }: { utilisateurs: Utilisateur[] }) {
             </CardHeader>
             <CardContent className="space-y-4">
                 {/* ── User list ── */}
-                {utilisateurs.length > 0 && (
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                            <Users className="size-4" />
-                            <span>Utilisateurs créés ({utilisateurs.length})</span>
-                        </div>
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Users className="size-4" />
+                        <span>Utilisateurs créés ({utilisateurs.length})</span>
+                    </div>
+                    {utilisateurs.length > 0 ? (
                         <div className="divide-y rounded-md border">
                             {utilisateurs.map((u) => (
                                 <div key={u.id} className="flex items-center justify-between px-3 py-2">
@@ -341,18 +341,12 @@ function StepUtilisateur({ utilisateurs }: { utilisateurs: Utilisateur[] }) {
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
-
-                {/* ── Empty state ── */}
-                {utilisateurs.length === 0 && !showForm && (
-                    <div className="flex flex-col items-center gap-3 py-4 text-center">
-                        <Users className="size-10 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                            Aucun utilisateur n'a encore été créé. Ajoutez votre premier collaborateur.
+                    ) : (
+                        <p className="py-3 text-center text-sm text-muted-foreground">
+                            Il n'y a actuellement pas d'utilisateurs
                         </p>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* ── Creation form ── */}
                 {showForm ? (
