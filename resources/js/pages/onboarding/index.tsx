@@ -319,7 +319,7 @@ function StepUtilisateur({ utilisateurs }: { utilisateurs: Utilisateur[] }) {
             <CardHeader className="text-center">
                 <CardTitle className="text-xl">Gérer les utilisateurs</CardTitle>
                 <CardDescription>
-                    Ajoutez les membres de votre équipe. Vous pouvez aussi passer cette étape pour le faire plus tard.
+                    Ajoutez les membres de votre équipe. Vous pouvez aussi passer cette étape pour la faire plus tard.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
