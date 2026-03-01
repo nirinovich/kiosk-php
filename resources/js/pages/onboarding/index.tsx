@@ -6,17 +6,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { CheckCircle, UserPlus, ArrowRight, SkipForward } from 'lucide-react';
+import { CheckCircle, UserPlus, ArrowRight, SkipForward, ArrowLeft } from 'lucide-react';
 
 type PageProps = {
     step: number;
+    company?: {
+        nom_commercial?: string | null;
+        email?: string | null;
+        telephone?: string | null;
+        adresse?: string | null;
+        raison_sociale?: string | null;
+        nif?: string | null;
+        stat?: string | null;
+        capital_social?: string | null;
+        rcs_ville?: string | null;
+        site_web?: string | null;
+    } | null;
     flash: {
         message?: string;
     };
 };
 
 export default function OnboardingIndex() {
-    const { step } = usePage<PageProps>().props;
+    const { step, company } = usePage<PageProps>().props;
 
     return (
         <>
@@ -29,7 +41,7 @@ export default function OnboardingIndex() {
                         <StepIndicator current={step} />
                     </div>
 
-                    {step === 1 && <StepCompany />}
+                    {step === 1 && <StepCompany company={company} />}
                     {step === 2 && <StepAdmin />}
                     {step === 3 && <StepVendeur />}
                     {step === 4 && <StepDone />}
@@ -73,18 +85,18 @@ function StepIndicator({ current }: { current: number }) {
 
 /* ───────── Step 1: Company information ───────── */
 
-function StepCompany() {
+function StepCompany({ company }: { company?: PageProps['company'] }) {
     const form = useForm({
-        nom_commercial: '',
-        email: '',
-        telephone: '',
-        adresse: '',
-        raison_sociale: '',
-        nif: '',
-        stat: '',
-        capital_social: '',
-        rcs_ville: '',
-        site_web: '',
+        nom_commercial: company?.nom_commercial ?? '',
+        email: company?.email ?? '',
+        telephone: company?.telephone ?? '',
+        adresse: company?.adresse ?? '',
+        raison_sociale: company?.raison_sociale ?? '',
+        nif: company?.nif ?? '',
+        stat: company?.stat ?? '',
+        capital_social: company?.capital_social ?? '',
+        rcs_ville: company?.rcs_ville ?? '',
+        site_web: company?.site_web ?? '',
     });
 
     function submit(e: React.FormEvent) {
@@ -236,10 +248,21 @@ function StepAdmin() {
                         />
                     </div>
 
-                    <Button type="submit" className="mt-2 w-full" disabled={form.processing}>
-                        {form.processing ? <Spinner /> : <UserPlus className="mr-2 size-4" />}
-                        Créer le compte administrateur
-                    </Button>
+                    <div className="mt-2 flex gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => router.post('/onboarding/step', { step: 1 })}
+                        >
+                            <ArrowLeft className="mr-2 size-4" />
+                            Retour
+                        </Button>
+                        <Button type="submit" className="flex-1" disabled={form.processing}>
+                            {form.processing ? <Spinner /> : <UserPlus className="mr-2 size-4" />}
+                            Créer le compte administrateur
+                        </Button>
+                    </div>
                 </form>
             </CardContent>
         </Card>
@@ -327,6 +350,15 @@ function StepVendeur() {
                             type="button"
                             variant="outline"
                             className="flex-1"
+                            onClick={() => router.post('/onboarding/step', { step: 2 })}
+                        >
+                            <ArrowLeft className="mr-2 size-4" />
+                            Retour
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="flex-1"
                             onClick={() => router.post('/onboarding/skip')}
                         >
                             <SkipForward className="mr-2 size-4" />
@@ -364,10 +396,21 @@ function StepDone() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <Button onClick={finish} className="w-full" disabled={form.processing}>
-                    {form.processing ? <Spinner /> : <ArrowRight className="mr-2 size-4" />}
-                    Accéder au tableau de bord
-                </Button>
+                <div className="flex gap-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => router.post('/onboarding/step', { step: 3 })}
+                    >
+                        <ArrowLeft className="mr-2 size-4" />
+                        Retour
+                    </Button>
+                    <Button onClick={finish} className="flex-1" disabled={form.processing}>
+                        {form.processing ? <Spinner /> : <ArrowRight className="mr-2 size-4" />}
+                        Accéder au tableau de bord
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );

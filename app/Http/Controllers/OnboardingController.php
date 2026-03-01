@@ -25,27 +25,28 @@ class OnboardingController extends Controller
      */
     private function resolveStep(): int
     {
+        $sessionStep = (int) session('onboarding_step', 1);
+
         // No company info yet → step 1
         if (!ParametresEntreprise::query()->exists()) {
             return 1;
         }
 
-        // No users at all → step 2 (create admin)
+        // No users at all → step 1 or 2 (company/admin)
         if (User::count() === 0) {
-            return 2;
+            return max(1, min($sessionStep, 2));
         }
 
-        // Admin exists but no vendeur yet AND session flag says still onboarding → step 3
+        // Admin exists but no vendeur yet AND session flag says still onboarding → step 1..4
         $hasVendeur = User::whereHas('role', fn ($q) => $q->where('nom', Role::VENDEUR))->exists();
 
         if (!$hasVendeur && session('onboarding_in_progress')) {
-            // Check if user explicitly skipped to step 4
-            return (int) session('onboarding_step', 3);
+            return max(1, min($sessionStep, 4));
         }
 
-        // Vendeur exists and still onboarding → step 4
+        // Vendeur exists and still onboarding → step 1..4
         if ($hasVendeur && session('onboarding_in_progress')) {
-            return 4;
+            return max(1, min($sessionStep, 4));
         }
 
         // Fallback (shouldn't reach here due to middleware)
@@ -81,10 +82,40 @@ class OnboardingController extends Controller
             ParametresEntreprise::query()->create($validated);
         });
 
-        session(['onboarding_step' => 2]);
+        $hasAdmin = User::whereHas('role', fn ($q) => $q->where('nom', Role::ADMIN))->exists();
+
+        session(['onboarding_step' => $hasAdmin ? 3 : 2]);
 
         return redirect()->route('onboarding.show')
             ->with('message', 'Informations de l\'entreprise enregistrées avec succès.');
+    }
+
+    /**
+     * Navigate to a specific onboarding step.
+     */
+    public function setStep(Request $request): RedirectResponse
+    {
+        $targetStep = (int) $request->validate([
+            'step' => ['required', 'integer', 'min:1', 'max:4'],
+        ])['step'];
+
+        $companyExists = ParametresEntreprise::query()->exists();
+        $userCount = User::count();
+        $inProgress = (bool) session('onboarding_in_progress');
+
+        if (!$companyExists) {
+            $targetStep = 1;
+        } elseif ($userCount === 0) {
+            $targetStep = max(1, min($targetStep, 2));
+        } elseif ($inProgress) {
+            $targetStep = max(1, min($targetStep, 4));
+        } else {
+            $targetStep = 1;
+        }
+
+        session(['onboarding_step' => $targetStep]);
+
+        return redirect()->route('onboarding.show');
     }
 
     /**
@@ -92,8 +123,22 @@ class OnboardingController extends Controller
      */
     public function show(): Response
     {
+        $company = ParametresEntreprise::query()->first([
+            'nom_commercial',
+            'email',
+            'telephone',
+            'adresse',
+            'raison_sociale',
+            'nif',
+            'stat',
+            'capital_social',
+            'rcs_ville',
+            'site_web',
+        ]);
+
         return Inertia::render('onboarding/index', [
             'step' => $this->resolveStep(),
+            'company' => $company,
         ]);
     }
 
@@ -112,6 +157,15 @@ class OnboardingController extends Controller
      */
     public function storeAdmin(Request $request): RedirectResponse
     {
+        $existingAdmin = User::whereHas('role', fn ($q) => $q->where('nom', Role::ADMIN))->exists();
+
+        if ($existingAdmin && session('onboarding_in_progress')) {
+            session(['onboarding_step' => 3]);
+
+            return redirect()->route('onboarding.show')
+                ->with('message', 'Compte administrateur déjà configuré.');
+        }
+
         $user = DB::transaction(function () use ($request) {
             $this->ensureRolesExist();
 

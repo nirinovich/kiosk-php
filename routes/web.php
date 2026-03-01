@@ -13,6 +13,7 @@ use Inertia\Inertia;
 */
 Route::middleware('not-onboarded')->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
+    Route::post('/onboarding/step', [OnboardingController::class, 'setStep'])->name('onboarding.setStep');
     Route::post('/onboarding/company', [OnboardingController::class, 'storeCompany'])->name('onboarding.storeCompany');
     Route::post('/onboarding/admin', [OnboardingController::class, 'storeAdmin'])->name('onboarding.storeAdmin');
     Route::post('/onboarding/vendeur', [OnboardingController::class, 'storeVendeur'])->name('onboarding.storeVendeur');
