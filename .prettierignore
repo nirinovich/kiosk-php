@@ -1,2 +1,12 @@
+node_modules/
+vendor/
+dist/
+build/
+public/build/
+bootstrap/ssr/
+coverage/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 resources/js/components/ui/*
 resources/views/mail/*
