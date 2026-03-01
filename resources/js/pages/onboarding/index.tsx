@@ -29,9 +29,10 @@ export default function OnboardingIndex() {
                         <StepIndicator current={step} />
                     </div>
 
-                    {step === 1 && <StepAdmin />}
-                    {step === 2 && <StepVendeur />}
-                    {step === 3 && <StepDone />}
+                    {step === 1 && <StepCompany />}
+                    {step === 2 && <StepAdmin />}
+                    {step === 3 && <StepVendeur />}
+                    {step === 4 && <StepDone />}
                 </div>
             </div>
         </>
@@ -41,7 +42,7 @@ export default function OnboardingIndex() {
 /* ───────── Step indicator ───────── */
 
 function StepIndicator({ current }: { current: number }) {
-    const steps = ['Administrateur', 'Vendeur', 'Terminé'];
+    const steps = ['Entreprise', 'Administrateur', 'Vendeur', 'Terminé'];
     return (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {steps.map((label, i) => {
@@ -70,7 +71,96 @@ function StepIndicator({ current }: { current: number }) {
     );
 }
 
-/* ───────── Step 1: Create Admin ───────── */
+/* ───────── Step 1: Company information ───────── */
+
+function StepCompany() {
+    const form = useForm({
+        nom_commercial: '',
+        email: '',
+        telephone: '',
+        adresse: '',
+        raison_sociale: '',
+        nif: '',
+        stat: '',
+        capital_social: '',
+        rcs_ville: '',
+        site_web: '',
+    });
+
+    function submit(e: React.FormEvent) {
+        e.preventDefault();
+        form.post('/onboarding/company');
+    }
+
+    return (
+        <Card>
+            <CardHeader className="text-center">
+                <CardTitle className="text-xl">Informations de l'entreprise</CardTitle>
+                <CardDescription>
+                    Commençons par enregistrer les informations de votre entreprise.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={submit} className="grid gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="company-nom-com">Nom commercial</Label>
+                        <Input
+                            id="company-nom-com"
+                            value={form.data.nom_commercial}
+                            onChange={(e) => form.setData('nom_commercial', e.target.value)}
+                            required
+                            autoFocus
+                            placeholder="Kiosk"
+                        />
+                        <InputError message={form.errors.nom_commercial} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="company-email">Adresse e-mail</Label>
+                        <Input
+                            id="company-email"
+                            type="email"
+                            value={form.data.email}
+                            onChange={(e) => form.setData('email', e.target.value)}
+                            required
+                            placeholder="contact@monentreprise.com"
+                        />
+                        <InputError message={form.errors.email} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="company-phone">Téléphone</Label>
+                        <Input
+                            id="company-phone"
+                            value={form.data.telephone}
+                            onChange={(e) => form.setData('telephone', e.target.value)}
+                            placeholder="+261 ..."
+                        />
+                        <InputError message={form.errors.telephone} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="company-address">Adresse</Label>
+                        <Input
+                            id="company-address"
+                            value={form.data.adresse}
+                            onChange={(e) => form.setData('adresse', e.target.value)}
+                            placeholder="Adresse de l'entreprise"
+                        />
+                        <InputError message={form.errors.adresse} />
+                    </div>
+
+                    <Button type="submit" className="mt-2 w-full" disabled={form.processing}>
+                        {form.processing ? <Spinner /> : <ArrowRight className="mr-2 size-4" />}
+                        Continuer
+                    </Button>
+                </form>
+            </CardContent>
+        </Card>
+    );
+}
+
+/* ───────── Step 2: Create Admin ───────── */
 
 function StepAdmin() {
     const form = useForm({
@@ -156,7 +246,7 @@ function StepAdmin() {
     );
 }
 
-/* ───────── Step 2: Create Vendeur (optional) ───────── */
+/* ───────── Step 3: Create Vendeur (optional) ───────── */
 
 function StepVendeur() {
     const form = useForm({
@@ -253,7 +343,7 @@ function StepVendeur() {
     );
 }
 
-/* ───────── Step 3: Done ───────── */
+/* ───────── Step 4: Done ───────── */
 
 function StepDone() {
     const form = useForm({});

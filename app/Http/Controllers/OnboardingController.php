@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Fortify\CreateNewUser;
+use App\Models\ParametresEntreprise;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -24,26 +25,66 @@ class OnboardingController extends Controller
      */
     private function resolveStep(): int
     {
-        // No users at all → step 1 (create admin)
-        if (User::count() === 0) {
+        // No company info yet → step 1
+        if (!ParametresEntreprise::query()->exists()) {
             return 1;
         }
 
-        // Admin exists but no vendeur yet AND session flag says still onboarding → step 2
+        // No users at all → step 2 (create admin)
+        if (User::count() === 0) {
+            return 2;
+        }
+
+        // Admin exists but no vendeur yet AND session flag says still onboarding → step 3
         $hasVendeur = User::whereHas('role', fn ($q) => $q->where('nom', Role::VENDEUR))->exists();
 
         if (!$hasVendeur && session('onboarding_in_progress')) {
-            // Check if user explicitly skipped to step 3
-            return (int) session('onboarding_step', 2);
+            // Check if user explicitly skipped to step 4
+            return (int) session('onboarding_step', 3);
         }
 
-        // Vendeur exists and still onboarding → step 3
+        // Vendeur exists and still onboarding → step 4
         if ($hasVendeur && session('onboarding_in_progress')) {
-            return 3;
+            return 4;
         }
 
         // Fallback (shouldn't reach here due to middleware)
         return 1;
+    }
+
+    /**
+     * Step 1: Save company information.
+     */
+    public function storeCompany(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nom_commercial' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'telephone' => ['nullable', 'string', 'max:20'],
+            'adresse' => ['nullable', 'string'],
+            'raison_sociale' => ['nullable', 'string', 'max:255'],
+            'nif' => ['nullable', 'string', 'max:50'],
+            'stat' => ['nullable', 'string', 'max:50'],
+            'capital_social' => ['nullable', 'string', 'max:50'],
+            'rcs_ville' => ['nullable', 'string', 'max:100'],
+            'site_web' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            $company = ParametresEntreprise::query()->first();
+
+            if ($company) {
+                $company->update($validated);
+                return;
+            }
+
+            ParametresEntreprise::query()->create($validated);
+        });
+
+        session(['onboarding_step' => 2]);
+
+        return redirect()->route('onboarding.show')
+            ->with('message', 'Informations de l\'entreprise enregistrées avec succès.');
     }
 
     /**
@@ -67,7 +108,7 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Step 1: Create the first admin user and log them in.
+     * Step 2: Create the first admin user and log them in.
      */
     public function storeAdmin(Request $request): RedirectResponse
     {
@@ -86,14 +127,14 @@ class OnboardingController extends Controller
         Cache::forget('onboarding_needed');
 
         // Mark onboarding as in-progress so the middleware lets us through
-        session(['onboarding_in_progress' => true, 'onboarding_step' => 2]);
+        session(['onboarding_in_progress' => true, 'onboarding_step' => 3]);
 
         return redirect()->route('onboarding.show')
             ->with('message', 'Compte administrateur créé avec succès.');
     }
 
     /**
-     * Step 2 (optional): Create a vendeur user.
+     * Step 3 (optional): Create a vendeur user.
      */
     public function storeVendeur(Request $request): RedirectResponse
     {
@@ -106,18 +147,18 @@ class OnboardingController extends Controller
             ]);
         });
 
-        session(['onboarding_step' => 3]);
+        session(['onboarding_step' => 4]);
 
         return redirect()->route('onboarding.show')
             ->with('message', 'Compte vendeur créé avec succès.');
     }
 
     /**
-     * Skip step 2: advance to step 3 without creating a vendeur.
+     * Skip step 3: advance to step 4 without creating a vendeur.
      */
     public function skip(): RedirectResponse
     {
-        session(['onboarding_step' => 3]);
+        session(['onboarding_step' => 4]);
 
         return redirect()->route('onboarding.show');
     }

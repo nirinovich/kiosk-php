@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class ParametresEntreprise extends Model
 {
-    protected $table = 'parametres_entreprises';
+    protected $table = 'parametres_entreprise';
     protected $primaryKey = 'id_entreprise';
+    public $timestamps = false;
 
     protected $fillable = [
         'nom_commercial',
