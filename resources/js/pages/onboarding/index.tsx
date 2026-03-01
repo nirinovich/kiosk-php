@@ -397,15 +397,6 @@ function StepDone() {
             </CardHeader>
             <CardContent>
                 <div className="flex gap-3">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => router.post('/onboarding/step', { step: 3 })}
-                    >
-                        <ArrowLeft className="mr-2 size-4" />
-                        Retour
-                    </Button>
                     <Button onClick={finish} className="flex-1" disabled={form.processing}>
                         {form.processing ? <Spinner /> : <ArrowRight className="mr-2 size-4" />}
                         Accéder au tableau de bord
