@@ -16,6 +16,7 @@ import AppLogo from './app-logo';
 import { dashboard } from '@/routes';
 import products from '@/routes/products';
 import clients from '@/routes/clients';
+import users from '@/routes/users';
 
 const mainNavItems: NavItem[] = [
     {
@@ -31,6 +32,11 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Clients',
         href: clients.index(),
+        icon: PackageSearch,
+    },
+    {
+        title: 'Users',
+        href: users.index(),
         icon: PackageSearch,
     },
 ];
