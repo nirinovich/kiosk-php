@@ -16,4 +16,9 @@ class Client extends Model
         'name', 'email', 'telephone', 'adresse',
         'type_client', 'nif', 'stat', 'rcs_ville'
     ];
+
+    public function commandes()
+    {
+        return $this->hasMany(Commande::class, 'id_client', 'id_client');
+    }
 }

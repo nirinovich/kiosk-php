@@ -35,4 +35,14 @@ class ProduitVariante extends Model
             'id_valeur'
         );
     }
+
+    public function lignesCommande()
+    {
+        return $this->hasMany(LigneCommande::class, 'id_variante', 'id_variante');
+    }
+
+    public function mouvementsStock()
+    {
+        return $this->hasMany(MouvementStock::class, 'id_variante', 'id_variante');
+    }
 }
