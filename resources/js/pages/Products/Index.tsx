@@ -27,6 +27,7 @@ interface Produit_modele {
     id_modele: number,
     name: string,
     prix_standard: number,
+    image_url: string,
     description: string
 }
 
@@ -98,6 +99,7 @@ export default function Index() {
                                 <TableHead>Name</TableHead>
                                 <TableHead>Price</TableHead>
                                 <TableHead>Description</TableHead>
+                                <TableHead>Image</TableHead>
                                 <TableHead className="text-center">Action</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -108,6 +110,7 @@ export default function Index() {
                                     <TableCell>{produit_modele.name}</TableCell>
                                     <TableCell>{produit_modele.prix_standard}</TableCell>
                                     <TableCell>{produit_modele.description}</TableCell>
+                                    <TableCell><img src={produit_modele.image_url} alt={produit_modele.name} className="w-16 h-16 object-cover rounded" /></TableCell>
                                     <TableCell className="text-center space-x-2">
                                         <Link href={products.edit(produit_modele.id_modele).url}><Button className='bg-slate-600 hover:bg-slate-700'>Edit</Button></Link>
                                         <Button disabled={processing} onClick={()=>handleDelete(produit_modele.id_modele, produit_modele.name)} className='bg-red-600 hover:bg-red-700'>Delete</Button>

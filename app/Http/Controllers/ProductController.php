@@ -42,15 +42,27 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
+            'image_url' => 'nullable|image',
             'variantes' => 'nullable|array',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
         ]);
 
-        DB::transaction(function() use ($validated,$request){
+        $imagePath = null;
+        if ($request->hasFile('image_url')) {
+            $image = $request->file('image_url');
+            $imageName = time().'_'.$image->getClientOriginalName();
+
+            $image->move(public_path('images'), $imageName);
+
+            $imagePath = 'images/'.$imageName;
+        }
+
+        DB::transaction(function() use ($validated,$request,$imagePath){
             $produit = ProduitModele::create([
                 'name' => $validated['name'],
                 'prix_standard' => $validated['prix_standard'],
                 'description' => $validated['description'],
+                'image_url' => $imagePath,
                 'id_categorie' => $validated['id_categorie'],
             ]);
             if(!empty($validated['variantes'])){
@@ -75,8 +87,9 @@ class ProductController extends Controller
                             $idsAAjouter[] = $valeur->id_valeur;
                         }
                     }
-                }if(!empty($idsAAjouter)){
-                    $nouvelleVariante->valeurs()->attach($idsAAjouter);
+                    if(!empty($idsAAjouter)){
+                        $nouvelleVariante->valeurs()->attach($idsAAjouter);
+                    }
                 }
             }
         });
@@ -93,7 +106,8 @@ class ProductController extends Controller
         return Inertia::render('Products/Edit', [
             'produit_modele' => $produit_modele,
             'attributs' => $attributs,
-            'categories' => $categories
+            'image_url' => $produit_modele->image_url,
+            'categories' => $categories,
         ]);
     }
 
@@ -103,6 +117,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
+            'image_url' => 'nullable|string',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
             
             'variantes' => 'array',
@@ -117,6 +132,7 @@ class ProductController extends Controller
                 'name' => $request->input('name'),
                 'prix_standard' => $request->input('prix_standard'),
                 'description' => $request->input('description'),
+                'image_url' => $request->input('image_url'),
                 'id_categorie' => $request->input('id_categorie'),
             ]);
 

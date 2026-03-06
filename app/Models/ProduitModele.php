@@ -11,7 +11,7 @@ class ProduitModele extends Model
     protected $table = 'produit_modeles';
     protected $primaryKey = 'id_modele';
 
-    protected $fillable = ['name', 'prix_standard', 'description','id_categorie'];
+    protected $fillable = ['name', 'prix_standard', 'description','image_url','id_categorie'];
 
     public function variantes()
     {

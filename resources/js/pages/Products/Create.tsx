@@ -48,6 +48,7 @@ interface FormState {
     name: string;
     prix_standard: string | number;
     description: string;
+    image_url: File | null;
     id_categorie: number | string;
     variantes: VarianteForm[];
 }
@@ -58,6 +59,7 @@ export default function Create({ attributs, categories }: Props) {
         name:'',
         prix_standard:'',
         description:'',
+        image_url: null,
         id_categorie: "",
         variantes: []
     });
@@ -125,6 +127,10 @@ export default function Create({ attributs, categories }: Props) {
                             <Label htmlFor='product description'>Description</Label>
                             <Textarea placeholder="Description" value={data.description} onChange={(e) => setData('description', e.target.value)} />
                         </div>
+                        <input
+                            type="file"
+                            onChange={(e) => setData('image_url', e.target.files?.[0] ?? null)}
+                        />
                         <div>
                             <Label htmlFor='categorie_id'>Catégorie</Label>
                             <select
