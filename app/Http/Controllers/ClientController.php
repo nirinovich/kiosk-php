@@ -9,9 +9,22 @@ use Inertia\Inertia;
 class ClientController extends Controller
 {
     public function index(){
-        $client = Client::all();
-        return Inertia::render('Clients/Index',compact('client'));
+        $search = request()->query('search');
+        $client = Client::query()
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            })
+            ->get();
+
+        return Inertia::render('Clients/Index',[
+            'client' => $client,
+            'filters' => [
+                'search' => $search
+            ]
+        ]);
     }
+
     public function create(){
         return Inertia::render('Clients/Create');
     }

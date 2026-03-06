@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -13,9 +14,18 @@ class UserController extends Controller
 
     public function index()
     {
-        $user = User::all();
+        $search = request()->query('search');
+        $user = User::query()
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            })
+            ->get();
         return Inertia::render('Users/Index', [
-            'user' => $user
+            'user' => $user,
+            'filters' => [
+                'search' => $search
+            ]
         ]);
     }
 
@@ -26,12 +36,18 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', User::class);
+
         $request->validate([
             'name'=>'required',
             'email'=>'required|email',
             'password'=>'required',
             'role_id'=>'required|exists:roles,id'
         ]);
+
+        if(Auth::user()->isGerant() && $request->role_id == 1){
+            abort(403, 'Vous ne pouvez pas créer un administrateur.');
+        }
 
         User::create([
             'name'=>$request->name,

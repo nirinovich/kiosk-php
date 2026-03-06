@@ -1,4 +1,4 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -39,10 +39,13 @@ interface PagePropos {
         message?: string
     }
     client : Client[]
+    filters: {
+        search?: string
+    }
 }
 
 export default function Index() {
-    const { client, flash } = usePage().props as PagePropos;
+    const { client, flash, filters } = usePage().props as PagePropos;
 
     const {processing, delete:destroy} = useForm();
 
@@ -52,11 +55,26 @@ export default function Index() {
         }
     }
 
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        router.get(
+            clients.index().url,
+            { search: e.target.value },
+            { preserveState: true, replace: true }
+        );
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Clients" />
             <div className='m-4'>
                 <Link href={clients.create()}><Button>Create a client</Button></Link>
+                <input
+                    type="text"
+                    placeholder="Search client..."
+                    defaultValue={filters.search}
+                    onChange={handleSearch}
+                    className="border rounded px-3 py-2"
+                />
             </div>
             <div>
                 <div>

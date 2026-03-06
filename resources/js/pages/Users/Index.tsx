@@ -1,4 +1,4 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -36,10 +36,13 @@ interface PageProps {
         message?: string
     }
     user: User[]
+    filters: {
+        search?: string
+    }   
 }
 
 export default function Index() {
-    const { user, flash } = usePage().props as PageProps;
+    const { user, flash, filters } = usePage().props as PageProps;
     const { processing, delete: destroy } = useForm();
 
     const handleDelete = (id: number, name: string) => {
@@ -49,6 +52,14 @@ export default function Index() {
         }
     }
 
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        router.get(
+            users.index().url,
+            { search: e.target.value },
+            { preserveState: true, replace: true }
+        );
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Users" />
@@ -56,6 +67,13 @@ export default function Index() {
                 <Link href={users.create().url}>
                     <Button>Create a user</Button>
                 </Link>
+                <input
+                    type="text"
+                    placeholder="Search user..."
+                    defaultValue={filters.search}
+                    onChange={handleSearch}
+                    className="border rounded px-3 py-2"
+                />
             </div>
             <div>
                 {flash.message && (

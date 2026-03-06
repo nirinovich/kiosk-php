@@ -26,9 +26,17 @@ class UserPolicy
     /**
      * Determine whether the user can create models.
      */
-    public function create(User $user): bool
+    public function create(User $authUser): bool
     {
-        return $user->isAdmin() || $user->isGerant();
+        if ($authUser->isAdmin()) {
+            return true;
+        }
+
+        if ($authUser->isGerant()) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

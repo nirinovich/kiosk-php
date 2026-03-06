@@ -14,6 +14,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import { router } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -34,10 +35,13 @@ interface PagePropos {
         message?: string
     }
     produit_modele : Produit_modele[]
+    filters: {
+        search?: string
+    }
 }
 
 export default function Index() {
-    const { produit_modele, flash } = usePage().props as PagePropos;
+    const { produit_modele, flash, filters } = usePage().props as PagePropos;
 
     const {processing, delete:destroy} = useForm();
 
@@ -47,11 +51,29 @@ export default function Index() {
         }
     }
 
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        router.get(
+            products.index().url,
+            { search: e.target.value },
+            { preserveState: true, replace: true }
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Products" />
-            <div className='m-4'>
-                <Link href={products.create()}><Button>Create a product</Button></Link>
+            <div className="m-4 flex gap-4">
+                <Link href={products.create()}>
+                    <Button>Create a product</Button>
+                </Link>
+
+                <input
+                    type="text"
+                    placeholder="Search product..."
+                    defaultValue={filters.search}
+                    onChange={handleSearch}
+                    className="border rounded px-3 py-2"
+                />
             </div>
             <div>
                 <div>
