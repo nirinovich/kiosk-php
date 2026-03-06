@@ -40,8 +40,8 @@ class UserPolicy
             return true;
         }
 
-        if ($authUser->isGerant()) {
-            return !$model->isAdmin();
+        if ($authUser->isGerant() && !$model->isAdmin()) {
+            return true;
         }
 
         return false;
@@ -50,9 +50,17 @@ class UserPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, User $model): bool
+    public function delete(User $authUser, User $model): bool
     {
-        return $user->isAdmin() || $user->isGerant();
+        if ($authUser->isAdmin()) {
+            return true;
+        }
+
+        if ($authUser->isGerant() && !$model->isAdmin()) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
