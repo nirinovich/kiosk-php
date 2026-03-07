@@ -92,18 +92,22 @@ export default function Create() {
                                 <option value="entreprise">Entreprise</option>
                             </select>
                         </div>
-                        <div>
-                            <Label htmlFor='client nif'>NIF</Label>
-                            <Input placeholder="Client NIF" value={data.nif} onChange={(e) => setData('nif', e.target.value)} />
-                        </div>
-                        <div>
-                            <Label htmlFor='client stat'>STAT</Label>
-                            <Input placeholder="Client STAT" value={data.stat} onChange={(e) => setData('stat', e.target.value)} />
-                        </div>
-                        <div>
-                            <Label htmlFor='client rcs_ville'>RCS Ville</Label>
-                            <Input placeholder="Client RCS Ville" value={data.rcs_ville} onChange={(e) => setData('rcs_ville', e.target.value)} />
-                        </div>
+                        {data.type_client === 'entreprise' && (
+                            <>
+                                <div>
+                                    <Label htmlFor='client nif'>NIF</Label>
+                                    <Input placeholder="Client NIF" value={data.nif} onChange={(e) => setData('nif', e.target.value)} />
+                                </div>
+                                <div>
+                                    <Label htmlFor='client stat'>STAT</Label>
+                                    <Input placeholder="Client STAT" value={data.stat} onChange={(e) => setData('stat', e.target.value)} />
+                                </div>
+                                <div>
+                                    <Label htmlFor='client rcs_ville'>RCS Ville</Label>
+                                    <Input placeholder="Client RCS Ville" value={data.rcs_ville} onChange={(e) => setData('rcs_ville', e.target.value)} />
+                                </div>
+                            </>
+                        )}
                     </div>
                     <Button disabled={processing} type="submit">Enregistrer le Client</Button>
                 </form>
