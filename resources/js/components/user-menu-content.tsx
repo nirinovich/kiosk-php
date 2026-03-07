@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, Users } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -11,6 +11,7 @@ import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import type { User } from '@/types';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
+import { index as users } from '@/routes/users';
 
 type Props = {
     user: User;
@@ -36,6 +37,17 @@ export function UserMenuContent({ user }: Props) {
                 <DropdownMenuItem asChild>
                     <Link
                         className="block w-full cursor-pointer"
+                        href={users().url}
+                        prefetch
+                        onClick={cleanup}
+                    >
+                        <Users className="mr-2" />
+                        Équipe
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="block w-full cursor-pointer"
                         href={edit()}
                         prefetch
                         onClick={cleanup}
@@ -45,6 +57,7 @@ export function UserMenuContent({ user }: Props) {
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
                 <Link
@@ -58,6 +71,7 @@ export function UserMenuContent({ user }: Props) {
                     Log out
                 </Link>
             </DropdownMenuItem>
+
         </>
     );
 }

@@ -26,6 +26,11 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
+        title: 'Journal des ventes',
+        href: ventes.index(),
+        icon: Receipt,
+    },
+    {
         title: 'Produits',
         href: products.index(),
         icon: ShoppingBag,
@@ -34,16 +39,6 @@ const mainNavItems: NavItem[] = [
         title: 'Clients',
         href: clients.index(),
         icon: UserCircle,
-    },
-    {
-        title: 'Journal des ventes',
-        href: ventes.index(),
-        icon: Receipt,
-    },
-    {
-        title: 'Users',
-        href: users.index(),
-        icon: Users,
     },
 ];
 
