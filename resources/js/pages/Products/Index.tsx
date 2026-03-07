@@ -1,225 +1,186 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import products from '@/routes/products';
+import { dashboard } from '@/routes';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { InfoIcon, PlusIcon, CheckIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { InfoIcon, PlusIcon, SearchIcon, PackageOpen, Pencil, Trash2 } from 'lucide-react';
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { useState } from 'react';
-import { router } from '@inertiajs/react';
-import axios from 'axios';
+} from '@/components/ui/table';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Products',
-        href: products.index().url,
-    },
+    { title: 'Dashboard', href: dashboard().url },
+    { title: 'Produits', href: products.index().url },
 ];
 
-interface Produit_modele {
-    id_modele: number,
-    name: string,
-    prix_standard: number,
-    image_url: string,
-    description: string
+interface Categorie {
+    id_categorie: number;
+    nom: string;
 }
 
-interface PagePropos {
-    flash: {
-        message?: string
-    }
-    produit_modele : Produit_modele[]
-    filters: {
-        search?: string
-    }
+interface ProduitModele {
+    id_modele: number;
+    name: string;
+    prix_standard: number;
+    image_url: string | null;
+    description: string;
+    categorie: Categorie | null;
+    variantes_count: number;
+    variantes_sum_stock_reel: number | null;
+}
+
+interface PageProps {
+    flash: { message?: string };
+    produit_modele: ProduitModele[];
+    filters: { search?: string };
+}
+
+function formatMoney(amount: number): string {
+    return new Intl.NumberFormat('fr-MG', { style: 'decimal', minimumFractionDigits: 0 }).format(amount) + ' MGA';
+}
+
+function stockBadge(stock: number | null) {
+    const total = stock ?? 0;
+    if (total === 0) return <Badge variant="destructive">Rupture</Badge>;
+    if (total <= 5) return <Badge className="bg-orange-500 hover:bg-orange-600 text-white">{total}</Badge>;
+    return <Badge className="bg-green-600 hover:bg-green-700 text-white">{total}</Badge>;
 }
 
 export default function Index() {
-    const { produit_modele, flash, filters } = usePage().props as PagePropos;
+    const { produit_modele, flash, filters } = usePage().props as unknown as PageProps;
+    const { processing, delete: destroy } = useForm();
 
-    const {processing, delete:destroy} = useForm();
-
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [newCatNom, setNewCatNom] = useState('');
-    const [newCatDesc, setNewCatDesc] = useState('');
-    const [catSaving, setCatSaving] = useState(false);
-    const [catError, setCatError] = useState('');
-    const [catSuccess, setCatSuccess] = useState('');
-
-    const handleDelete =(id:number, name:string) => {
-        if(confirm(`Do you want to delete a product - ${id} . ${name}`)){
+    const handleDelete = (id: number, name: string) => {
+        if (confirm(`Supprimer le produit « ${name} » ? Cette action est irréversible.`)) {
             destroy(`/products/${id}`);
-        }
-    }
-
-    const handleCreateCategory = async () => {
-        if (!newCatNom.trim()) {
-            setCatError('Le nom est obligatoire.');
-            return;
-        }
-        setCatSaving(true);
-        setCatError('');
-        setCatSuccess('');
-        try {
-            const response = await axios.post('/categories', {
-                nom: newCatNom,
-                description: newCatDesc,
-            });
-            setCatSuccess(`Catégorie "${response.data.nom}" créée avec succès !`);
-            setNewCatNom('');
-            setNewCatDesc('');
-            setTimeout(() => {
-                setDialogOpen(false);
-                setCatSuccess('');
-            }, 1200);
-        } catch (error: any) {
-            if (error.response?.status === 422) {
-                const msgs = error.response.data.errors;
-                setCatError(Object.values(msgs).flat().join(' '));
-            } else {
-                setCatError('Une erreur est survenue.');
-            }
-        } finally {
-            setCatSaving(false);
         }
     };
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        router.get(
-            products.index().url,
-            { search: e.target.value },
-            { preserveState: true, replace: true }
-        );
+        router.get(products.index().url, { search: e.target.value }, { preserveState: true, replace: true });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Products" />
-            <div className='m-4 flex gap-2'>
-                <Link href={products.create()}><Button>Create a product</Button></Link>
+            <Head title="Produits" />
 
-                <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); setCatError(''); setCatSuccess(''); }}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline">
-                            <PlusIcon className="h-4 w-4 mr-2" /> Créer une catégorie
+            <div className="p-4 space-y-4">
+                {/* Toolbar */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="relative w-full sm:w-80">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Rechercher un produit ou catégorie..."
+                            defaultValue={filters.search}
+                            onChange={handleSearch}
+                            className="pl-9"
+                        />
+                    </div>
+
+                    <Link href={products.create()}>
+                        <Button>
+                            <PlusIcon className="h-4 w-4 mr-2" />
+                            Nouveau produit
                         </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Nouvelle catégorie</DialogTitle>
-                            <DialogDescription>Créez une catégorie qui sera disponible lors de la création de produits.</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-2">
-                            <div>
-                                <Label htmlFor="new-cat-nom">Nom *</Label>
-                                <Input
-                                    id="new-cat-nom"
-                                    placeholder="Ex: Électronique"
-                                    value={newCatNom}
-                                    onChange={(e) => setNewCatNom(e.target.value)}
-                                    className="mt-1"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="new-cat-desc">Description</Label>
-                                <Textarea
-                                    id="new-cat-desc"
-                                    placeholder="Description optionnelle"
-                                    value={newCatDesc}
-                                    onChange={(e) => setNewCatDesc(e.target.value)}
-                                    className="mt-1"
-                                />
-                            </div>
-                            {catError && <p className="text-sm text-destructive">{catError}</p>}
-                            {catSuccess && (
-                                <p className="text-sm text-green-600 flex items-center gap-1">
-                                    <CheckIcon className="h-4 w-4" /> {catSuccess}
-                                </p>
-                            )}
-                        </div>
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
-                            <Button type="button" onClick={handleCreateCategory} disabled={catSaving}>
-                                {catSaving ? 'Création...' : 'Créer'}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </Link>
+                </div>
 
-                <input
-                    type="text"
-                    placeholder="Search product..."
-                    defaultValue={filters.search}
-                    onChange={handleSearch}
-                    className="border rounded px-3 py-2"
-                />
-            </div>
-            <div>
-                <div>
-                    {flash.message && (
-                        <Alert>
-                            <InfoIcon />
-                            <AlertTitle>Notification</AlertTitle>
-                            <AlertDescription>
-                                {flash.message}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                </div>
-            </div>
-            {produit_modele.length > 0 && (
-                <div className='m-4'>
-                    <Table>
-                        <TableCaption>A list of Product</TableCaption>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[100px]">ID</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Price</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Image</TableHead>
-                                <TableHead className="text-center">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {produit_modele.map((produit_modele)=>(
+                {/* Flash message */}
+                {flash.message && (
+                    <Alert>
+                        <InfoIcon className="h-4 w-4" />
+                        <AlertTitle>Notification</AlertTitle>
+                        <AlertDescription>{flash.message}</AlertDescription>
+                    </Alert>
+                )}
+
+                {/* Product table or empty state */}
+                {produit_modele.length > 0 ? (
+                    <div className="rounded-lg border">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell className="font-medium">{produit_modele.id_modele}</TableCell>
-                                    <TableCell>{produit_modele.name}</TableCell>
-                                    <TableCell>{produit_modele.prix_standard}</TableCell>
-                                    <TableCell>{produit_modele.description}</TableCell>
-                                    <TableCell><img src={produit_modele.image_url} alt={produit_modele.name} className="w-16 h-16 object-cover rounded" /></TableCell>
-                                    <TableCell className="text-center space-x-2">
-                                        <Link href={products.edit(produit_modele.id_modele).url}><Button className='bg-slate-600 hover:bg-slate-700'>Edit</Button></Link>
-                                        <Button disabled={processing} onClick={()=>handleDelete(produit_modele.id_modele, produit_modele.name)} className='bg-red-600 hover:bg-red-700'>Delete</Button>
-                                    </TableCell>
+                                    <TableHead className="w-16">Image</TableHead>
+                                    <TableHead>Nom</TableHead>
+                                    <TableHead>Catégorie</TableHead>
+                                    <TableHead className="text-right">Prix</TableHead>
+                                    <TableHead className="text-center">Stock</TableHead>
+                                    <TableHead className="text-center">Variantes</TableHead>
+                                    <TableHead className="text-center">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            )}
+                            </TableHeader>
+                            <TableBody>
+                                {produit_modele.map((p) => (
+                                    <TableRow key={p.id_modele}>
+                                        <TableCell>
+                                            {p.image_url ? (
+                                                <img src={`/${p.image_url}`} alt={p.name} className="w-10 h-10 object-cover rounded" />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                                                    <PackageOpen className="h-4 w-4 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="font-medium">{p.name}</TableCell>
+                                        <TableCell className="text-muted-foreground">{p.categorie?.nom ?? '—'}</TableCell>
+                                        <TableCell className="text-right tabular-nums">{formatMoney(p.prix_standard)}</TableCell>
+                                        <TableCell className="text-center">{stockBadge(p.variantes_sum_stock_reel)}</TableCell>
+                                        <TableCell className="text-center">
+                                            {p.variantes_count <= 1 ? (
+                                                <span className="text-xs text-muted-foreground">Simple</span>
+                                            ) : (
+                                                <Badge variant="secondary">{p.variantes_count}</Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <Link href={products.edit(p.id_modele).url}>
+                                                    <Button variant="ghost" size="icon" title="Modifier">
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    disabled={processing}
+                                                    onClick={() => handleDelete(p.id_modele, p.name)}
+                                                    title="Supprimer"
+                                                    className="text-destructive hover:text-destructive"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <PackageOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold">Aucun produit</h3>
+                        <p className="text-sm text-muted-foreground mt-1 mb-4">
+                            Commencez par créer votre premier produit.
+                        </p>
+                        <Link href={products.create()}>
+                            <Button>
+                                <PlusIcon className="h-4 w-4 mr-2" />
+                                Créer votre premier produit
+                            </Button>
+                        </Link>
+                    </div>
+                )}
+            </div>
         </AppLayout>
     );
 }

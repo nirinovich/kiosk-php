@@ -17,9 +17,17 @@ class ProductController extends Controller
         $search = $request->search;
 
         $produit_modele = ProduitModele::query()
+            ->with('categorie')
+            ->withCount('variantes')
+            ->withSum('variantes', 'stock_reel')
             ->when($search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhereHas('categorie', function ($cq) use ($search) {
+                          $cq->where('nom', 'like', "%{$search}%");
+                      });
+                });
             })
             ->get();
 
@@ -104,7 +112,7 @@ class ProductController extends Controller
 
         });
         
-        return redirect()->route('products.index')->with('message','Product created');
+        return redirect()->route('products.index')->with('message', 'Produit créé avec succès');
     }
 
     public function edit($id)
@@ -113,11 +121,21 @@ class ProductController extends Controller
         $attributs = Attribut::with('valeurs')->get();
         $categories = Categorie::all();
 
+        // Detect if product is "simple" (1 variant with no attribute values)
+        $isSimpleProduct = $produit_modele->variantes->count() === 1
+            && $produit_modele->variantes->first()->valeurs->isEmpty();
+
+        $currentStock = $isSimpleProduct
+            ? (int) $produit_modele->variantes->first()->stock_reel
+            : 0;
+
         return Inertia::render('Products/Edit', [
             'produit_modele' => $produit_modele,
             'attributs' => $attributs,
             'image_url' => $produit_modele->image_url,
             'categories' => $categories,
+            'isSimpleProduct' => $isSimpleProduct,
+            'currentStock' => $currentStock,
         ]);
     }
 
@@ -127,65 +145,116 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
-            'image_url' => 'nullable|string',
+            'image_url' => 'nullable',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
-            
-            'variantes' => 'array',
-            'variantes.*.id_variante' => 'nullable|integer', 
+            'is_simple' => 'boolean',
+            'stock_initial' => 'nullable|integer|min:0',
+
+            'variantes' => 'nullable|array',
+            'variantes.*.id_variante' => 'nullable|integer',
             'variantes.*.sku' => 'nullable|string|max:255',
             'variantes.*.surcout' => 'nullable|numeric',
             'variantes.*.stock_reel' => 'nullable|integer|min:0',
-            'variantes.*.valeurs_ids' => 'array',
+            'variantes.*.valeurs_ids' => 'nullable|array',
+            'variantes.*.valeurs_custom' => 'nullable|array',
         ]);
 
         DB::transaction(function () use ($request, $produit_modele) {
+            // Handle image upload
+            $imageUrl = $produit_modele->image_url;
+            if ($request->hasFile('image_url')) {
+                $image = $request->file('image_url');
+                $imageName = time() . '_' . $image->getClientOriginalName();
+                $image->move(public_path('images'), $imageName);
+                $imageUrl = 'images/' . $imageName;
+            }
+
             $produit_modele->update([
                 'name' => $request->input('name'),
                 'prix_standard' => $request->input('prix_standard'),
                 'description' => $request->input('description'),
-                'image_url' => $request->input('image_url'),
+                'image_url' => $imageUrl,
                 'id_categorie' => $request->input('id_categorie'),
             ]);
 
-            $variantesRecues = $request->input('variantes', []);
-            $idsVariantesAGarder = collect($variantesRecues)
-                ->pluck('id_variante')
-                ->filter() // Retire les valeurs nulles (les nouvelles variantes pas encore créées)
-                ->toArray();
+            $isSimple = $request->boolean('is_simple', false);
 
-            // On supprime de la BDD les variantes qui ne sont plus présentes dans le formulaire
-            $produit_modele->variantes()->whereNotIn('id_variante', $idsVariantesAGarder)->delete();
+            if ($isSimple) {
+                // Simple product mode: upsert a single default variant
+                $defaultVariant = $produit_modele->variantes()->first();
+                $stock = $request->input('stock_initial', 0);
 
-            foreach ($variantesRecues as $varianteData) {
-                if (!empty($varianteData['id_variante'])) {
-                    $variante = $produit_modele->variantes()->find($varianteData['id_variante']);
-                    if ($variante) {
-                        $variante->update([
-                            'reference_sku' => $varianteData['sku'],
-                            'surcout_prix' => $varianteData['surcout'] ?? 0,
-                            'stock_reel' => $varianteData['stock_reel'] ?? $variante->stock_reel,
-                        ]);
-                    }
+                if ($defaultVariant) {
+                    // Delete any extra variants, keep only the first
+                    $produit_modele->variantes()->where('id_variante', '!=', $defaultVariant->id_variante)->delete();
+                    $defaultVariant->update([
+                        'reference_sku' => null,
+                        'surcout_prix' => 0,
+                        'stock_reel' => $stock,
+                    ]);
+                    $defaultVariant->valeurs()->detach();
                 } else {
-                    $variante = $produit_modele->variantes()->create([
-                        'reference_sku' => $varianteData['sku'],
-                        'surcout_prix' => $varianteData['surcout'] ?? 0,
-                        'stock_reel' => $varianteData['stock_reel'] ?? 0,
+                    $produit_modele->variantes()->create([
+                        'reference_sku' => null,
+                        'surcout_prix' => 0,
+                        'stock_reel' => $stock,
                     ]);
                 }
+            } else {
+                // Variant mode
+                $variantesRecues = $request->input('variantes', []);
+                $idsVariantesAGarder = collect($variantesRecues)
+                    ->pluck('id_variante')
+                    ->filter()
+                    ->toArray();
 
-                if (isset($variante) && isset($varianteData['valeurs_ids'])) {
-                    $variante->valeurs()->sync($varianteData['valeurs_ids']);
+                $produit_modele->variantes()->whereNotIn('id_variante', $idsVariantesAGarder)->delete();
+
+                foreach ($variantesRecues as $varianteData) {
+                    if (!empty($varianteData['id_variante'])) {
+                        $variante = $produit_modele->variantes()->find($varianteData['id_variante']);
+                        if ($variante) {
+                            $variante->update([
+                                'reference_sku' => $varianteData['sku'] ?? null,
+                                'surcout_prix' => $varianteData['surcout'] ?? 0,
+                                'stock_reel' => $varianteData['stock_reel'] ?? $variante->stock_reel,
+                            ]);
+                        }
+                    } else {
+                        $variante = $produit_modele->variantes()->create([
+                            'reference_sku' => $varianteData['sku'] ?? null,
+                            'surcout_prix' => $varianteData['surcout'] ?? 0,
+                            'stock_reel' => $varianteData['stock_reel'] ?? 0,
+                        ]);
+                    }
+
+                    // Handle attribute values
+                    if (isset($variante)) {
+                        $idsAAjouter = $varianteData['valeurs_ids'] ?? [];
+
+                        if (!empty($varianteData['valeurs_custom'])) {
+                            foreach ($varianteData['valeurs_custom'] as $custom) {
+                                $attribut = Attribut::firstOrCreate(['nom_attribut' => $custom['attribut']]);
+                                $valeur = ValeurAttribut::firstOrCreate([
+                                    'id_attribut' => $attribut->id_attribut,
+                                    'nom_valeur' => $custom['valeur'],
+                                ]);
+                                $idsAAjouter[] = $valeur->id_valeur;
+                            }
+                        }
+
+                        $variante->valeurs()->sync($idsAAjouter);
+                    }
                 }
             }
         });
 
-        return redirect()->route('products.index')->with('message', 'Product updated successfully');
+        return redirect()->route('products.index')->with('message', 'Produit mis à jour avec succès');
     }
 
     public function destroy(ProduitModele $produit_modele){
         $produit_modele->delete();
-        return redirect()->route('products.index')->with('message','Product destoyed');
+        return redirect()->route('products.index')->with('message', 'Produit supprimé');
 
     }
 }

@@ -12,7 +12,7 @@ class Attribut extends Model
     protected $table = 'attributs';
     protected $primaryKey = 'id_attribut';
 
-    protected $fillable = ['nom'];
+    protected $fillable = ['nom_attribut'];
 
     // Un attribut possède plusieurs valeurs (ex: Couleur -> Rouge, Bleu)
     public function valeurs()
