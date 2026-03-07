@@ -3,17 +3,18 @@ import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import ventes from '@/routes/ventes';
+import { dashboard } from '@/routes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ProductSearch, type Variante } from '@/components/product-search';
 import { ClientSelect, type ClientOption } from '@/components/client-select';
 import { LineItemsTable, type LigneItem } from '@/components/line-items-table';
 import { OrderSummary } from '@/components/order-summary';
-import { ShoppingCart, AlertCircle } from 'lucide-react';
+import { FormErrors } from '@/components/form-errors';
 
 const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: dashboard().url },
     { title: 'Journal des ventes', href: ventes.index().url },
     { title: 'Nouvelle vente', href: ventes.create().url },
 ];
@@ -99,28 +100,12 @@ export default function Create({ variantes, clients }: Props) {
         post(ventes.store().url);
     }
 
-    const hasErrors = Object.keys(errors).length > 0;
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Nouvelle vente" />
 
-            <form onSubmit={handleSubmit} className="mx-auto max-w-5xl space-y-6 p-4">
-                <div className="flex items-center gap-3">
-                    <ShoppingCart className="text-primary size-6" />
-                    <h1 className="text-2xl font-bold">Nouvelle vente</h1>
-                </div>
-
-                {hasErrors && (
-                    <Alert variant="destructive">
-                        <AlertCircle className="size-4" />
-                        <AlertDescription>
-                            {Object.values(errors).flat().map((err, i) => (
-                                <div key={i}>{err}</div>
-                            ))}
-                        </AlertDescription>
-                    </Alert>
-                )}
+            <form onSubmit={handleSubmit} className="space-y-6 p-4">
+                <FormErrors errors={errors} />
 
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Left column: Product search + line items */}

@@ -2,6 +2,7 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import ventes from '@/routes/ventes';
+import { dashboard } from '@/routes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,16 +10,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, InfoIcon } from 'lucide-react';
+import { Plus, SearchIcon, InfoIcon, ShoppingCart, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: dashboard().url },
     { title: 'Journal des ventes', href: ventes.index().url },
 ];
 
@@ -64,6 +65,10 @@ interface PageProps {
     [key: string]: unknown;
 }
 
+function formatMoney(amount: number): string {
+    return new Intl.NumberFormat('fr-MG', { style: 'decimal', minimumFractionDigits: 0 }).format(amount) + ' MGA';
+}
+
 export default function Index() {
     const { commandes, filters, flash } = usePage<PageProps>().props;
     const [search, setSearch] = useState(filters.search || '');
@@ -92,17 +97,54 @@ export default function Index() {
         }
     }
 
+    const hasActiveFilters = !!(filters.search || filters.date_from || filters.date_to);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Journal des ventes" />
 
-            <div className="space-y-4 p-4">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Journal des ventes</h1>
+            <div className="p-4 space-y-4">
+                {/* Toolbar */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                        <div className="relative w-full sm:w-80">
+                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Rechercher par n° commande ou client..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                className="pl-9"
+                            />
+                        </div>
+                        <Input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="w-auto"
+                        />
+                        <Input
+                            type="date"
+                            value={dateTo}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="w-auto"
+                        />
+                        <Button variant="secondary" size="sm" onClick={applyFilters}>
+                            Filtrer
+                        </Button>
+                        {hasActiveFilters && (
+                            <Button variant="ghost" size="sm" onClick={resetFilters}>
+                                <RotateCcw className="h-4 w-4 mr-1" />
+                                Réinitialiser
+                            </Button>
+                        )}
+                    </div>
+
                     <Link href={ventes.create().url}>
                         <Button>
-                            <Plus className="mr-2 size-4" />
+                            <Plus className="h-4 w-4 mr-2" />
                             Nouvelle vente
                         </Button>
                     </Link>
@@ -111,63 +153,16 @@ export default function Index() {
                 {/* Flash messages */}
                 {(flash.success || flash.message) && (
                     <Alert>
-                        <InfoIcon className="size-4" />
+                        <InfoIcon className="h-4 w-4" />
                         <AlertTitle>Notification</AlertTitle>
                         <AlertDescription>{flash.success || flash.message}</AlertDescription>
                     </Alert>
                 )}
 
-                {/* Filters */}
-                <div className="flex flex-wrap items-end gap-3">
-                    <div className="relative flex-1 min-w-[200px]">
-                        <Search className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
-                        <Input
-                            placeholder="Rechercher par n° commande ou nom client..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="pl-9"
-                        />
-                    </div>
-                    <div>
-                        <Input
-                            type="date"
-                            value={dateFrom}
-                            onChange={(e) => setDateFrom(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Date début"
-                        />
-                    </div>
-                    <div>
-                        <Input
-                            type="date"
-                            value={dateTo}
-                            onChange={(e) => setDateTo(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Date fin"
-                        />
-                    </div>
-                    <Button variant="secondary" onClick={applyFilters}>
-                        Filtrer
-                    </Button>
-                    {(filters.search || filters.date_from || filters.date_to) && (
-                        <Button variant="outline" onClick={resetFilters}>
-                            Réinitialiser
-                        </Button>
-                    )}
-                </div>
-
-                {/* Table */}
-                {commandes.data.length === 0 ? (
-                    <div className="text-muted-foreground rounded-md border border-dashed p-8 text-center">
-                        Aucune vente trouvée.
-                    </div>
-                ) : (
-                    <div className="rounded-md border">
+                {/* Table or empty state */}
+                {commandes.data.length > 0 ? (
+                    <div className="rounded-lg border">
                         <Table>
-                            <TableCaption>
-                                {commandes.total} vente{commandes.total > 1 ? 's' : ''} au total
-                            </TableCaption>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Date</TableHead>
@@ -185,7 +180,7 @@ export default function Index() {
                                         className="cursor-pointer"
                                         onClick={() => router.visit(ventes.show(commande.id).url)}
                                     >
-                                        <TableCell>
+                                        <TableCell className="text-muted-foreground">
                                             {new Date(commande.created_at).toLocaleDateString('fr-FR')}
                                         </TableCell>
                                         <TableCell className="font-medium">
@@ -197,10 +192,10 @@ export default function Index() {
                                             )}
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            {commande.lignes_count}
+                                            <Badge variant="secondary">{commande.lignes_count}</Badge>
                                         </TableCell>
-                                        <TableCell className="text-right font-medium">
-                                            {Number(commande.montant_ttc).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} Ar
+                                        <TableCell className="text-right font-medium tabular-nums">
+                                            {formatMoney(Number(commande.montant_ttc))}
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <Badge
@@ -214,21 +209,44 @@ export default function Index() {
                             </TableBody>
                         </Table>
                     </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold">Aucune vente</h3>
+                        <p className="text-sm text-muted-foreground mt-1 mb-4">
+                            {hasActiveFilters
+                                ? 'Aucune vente ne correspond à vos filtres.'
+                                : 'Commencez par enregistrer votre première vente.'}
+                        </p>
+                        {!hasActiveFilters && (
+                            <Link href={ventes.create().url}>
+                                <Button>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Enregistrer une vente
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
                 )}
 
                 {/* Pagination */}
                 {commandes.last_page > 1 && (
-                    <div className="flex items-center justify-center gap-1">
-                        {commandes.links.map((link, i) => (
-                            <Button
-                                key={i}
-                                variant={link.active ? 'default' : 'outline'}
-                                size="sm"
-                                disabled={!link.url}
-                                onClick={() => link.url && router.visit(link.url)}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                            {commandes.total} vente{commandes.total > 1 ? 's' : ''} au total
+                        </p>
+                        <div className="flex items-center gap-1">
+                            {commandes.links.map((link, i) => (
+                                <Button
+                                    key={i}
+                                    variant={link.active ? 'default' : 'outline'}
+                                    size="sm"
+                                    disabled={!link.url}
+                                    onClick={() => link.url && router.visit(link.url)}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
