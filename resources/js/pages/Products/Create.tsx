@@ -51,6 +51,7 @@ interface Props{
 interface VarianteForm{
     sku: string,
     surcout: number,
+    stock_reel: number,
     valeurs_ids: number[],
     valeurs_custom: { attribut: string; valeur: string }[];
 }
@@ -59,6 +60,7 @@ interface FormState {
     name: string;
     prix_standard: string | number;
     description: string;
+    stock_initial: number;
     id_categorie: number | string;
     variantes: VarianteForm[];
 }
@@ -75,6 +77,7 @@ export default function Create({ attributs, categories: initialCategories }: Pro
         name:'',
         prix_standard:'',
         description:'',
+        stock_initial: 0,
         id_categorie: "",
         variantes: []
     });
@@ -86,6 +89,7 @@ export default function Create({ attributs, categories: initialCategories }: Pro
             {
                 sku: '', 
                 surcout: 0, 
+                stock_reel: 0,
                 valeurs_ids: [], 
                 valeurs_custom: []
             }
@@ -164,9 +168,16 @@ export default function Create({ attributs, categories: initialCategories }: Pro
                             <Label htmlFor='product name'>Name</Label>
                             <Input placeholder="Product Name" value={data.name} onChange={(e) => setData('name', e.target.value)} />
                         </div>
-                        <div>
-                            <Label htmlFor='product price'>Price</Label>
-                            <Input type="number" step="0.01" placeholder="Prix Standard" value={data.prix_standard} onChange={(e) => setData('prix_standard', e.target.value)} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor='product price'>Prix standard (HT)</Label>
+                                <Input type="number" step="0.01" placeholder="Prix Standard" value={data.prix_standard} onChange={(e) => setData('prix_standard', e.target.value)} />
+                            </div>
+                            <div>
+                                <Label htmlFor='stock_initial'>Stock initial</Label>
+                                <Input type="number" min="0" step="1" placeholder="0" value={data.stock_initial} onChange={(e) => setData('stock_initial', Number(e.target.value))} />
+                                <p className="text-xs text-muted-foreground mt-1">Ignoré si vous ajoutez des variantes (le stock est défini par variante).</p>
+                            </div>
                         </div>
                         <div>
                             <Label htmlFor='product description'>Description</Label>
@@ -252,7 +263,7 @@ export default function Create({ attributs, categories: initialCategories }: Pro
                                     <TrashIcon className="h-4 w-4" />
                                 </Button>
 
-                                <div className="grid grid-cols-2 gap-4 pr-10">
+                                <div className="grid grid-cols-3 gap-4 pr-10">
                                     <div>
                                         <Label>Référence (SKU)</Label>
                                         <Input placeholder={`Ex: REF-${index + 1}`} value={variante.sku} onChange={(e) => updateVariante(index, 'sku', e.target.value)} />
@@ -260,6 +271,10 @@ export default function Create({ attributs, categories: initialCategories }: Pro
                                     <div>
                                         <Label>Surcoût Prix (HT)</Label>
                                         <Input type="number" step="0.01" value={variante.surcout} onChange={(e) => updateVariante(index, 'surcout', e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <Label>Stock initial</Label>
+                                        <Input type="number" min="0" step="1" value={variante.stock_reel} onChange={(e) => updateVariante(index, 'stock_reel', e.target.value)} />
                                     </div>
                                 </div>
 

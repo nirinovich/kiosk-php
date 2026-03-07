@@ -40,6 +40,7 @@ interface VarianteDepuisBDD {
     id_variante: number;
     reference_sku: string;
     surcout_prix: number;
+    stock_reel: number;
     valeurs: Valeur[];
 }
 
@@ -47,6 +48,7 @@ interface VarianteForm {
     id_variante?: number; 
     sku: string;
     surcout: number;
+    stock_reel: number;
     valeurs_ids: number[];
     valeurs_custom: { attribut: string; valeur: string }[];
 }
@@ -85,6 +87,7 @@ export default function Edit({produit_modele, attributs, categories: initialCate
         id_variante: variante.id_variante,
         sku: variante.reference_sku || '',
         surcout: Number(variante.surcout_prix) || 0,
+        stock_reel: Number(variante.stock_reel) || 0,
         valeurs_ids: variante.valeurs.map((v) => v.id_valeur),
         valeurs_custom: []
     }));
@@ -103,6 +106,7 @@ export default function Edit({produit_modele, attributs, categories: initialCate
             {
                 sku: '', 
                 surcout: 0, 
+                stock_reel: 0,
                 valeurs_ids: [], 
                 valeurs_custom: []
             }
@@ -282,7 +286,7 @@ export default function Edit({produit_modele, attributs, categories: initialCate
                                 
                                 <h3 className="font-semibold">Variante #{index + 1}</h3>
                                 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <Label>SKU / Référence</Label>
                                         <Input value={variante.sku} onChange={(e) => {
@@ -296,6 +300,14 @@ export default function Edit({produit_modele, attributs, categories: initialCate
                                         <Input type="number" value={variante.surcout} onChange={(e) => {
                                             const newVars = [...data.variantes];
                                             newVars[index].surcout = Number(e.target.value);
+                                            setData('variantes', newVars);
+                                        }} />
+                                    </div>
+                                    <div>
+                                        <Label>Stock réel</Label>
+                                        <Input type="number" min="0" step="1" value={variante.stock_reel} onChange={(e) => {
+                                            const newVars = [...data.variantes];
+                                            newVars[index].stock_reel = Number(e.target.value);
                                             setData('variantes', newVars);
                                         }} />
                                     </div>

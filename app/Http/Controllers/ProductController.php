@@ -28,7 +28,9 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
+            'stock_initial' => 'nullable|integer|min:0',
             'variantes' => 'nullable|array',
+            'variantes.*.stock_reel' => 'nullable|integer|min:0',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
         ]);
 
@@ -39,12 +41,19 @@ class ProductController extends Controller
                 'description' => $validated['description'],
                 'id_categorie' => $validated['id_categorie'],
             ]);
-            if(!empty($validated['variantes'])){
+            if(empty($validated['variantes'])){
+                // Pas de variantes explicites : on crée une variante par défaut pour gérer le stock
+                $produit->variantes()->create([
+                    'reference_sku' => null,
+                    'surcout_prix' => 0,
+                    'stock_reel' => $validated['stock_initial'] ?? 0,
+                ]);
+            } else {
                 foreach($validated['variantes'] as $varianteData){
                     $nouvelleVariante = $produit->variantes()->create([
                         'reference_sku' => $varianteData['sku'] ?? null,
                         'surcout_prix' => $varianteData['surcout'] ?? 0,
-                        'stock_reel' => 0,
+                        'stock_reel' => $varianteData['stock_reel'] ?? 0,
                     ]);
                     $idsAAjouter = $varianteData['valeurs_ids'] ?? [];
                     if(!empty($varianteData['valeurs_custom'])){
@@ -61,10 +70,12 @@ class ProductController extends Controller
                             $idsAAjouter[] = $valeur->id_valeur;
                         }
                     }
-                }if(!empty($idsAAjouter)){
-                    $nouvelleVariante->valeurs()->attach($idsAAjouter);
+                    if(!empty($idsAAjouter)){
+                        $nouvelleVariante->valeurs()->attach($idsAAjouter);
+                    }
                 }
             }
+
         });
         
         return redirect()->route('products.index')->with('message','Product created');
@@ -95,6 +106,7 @@ class ProductController extends Controller
             'variantes.*.id_variante' => 'nullable|integer', 
             'variantes.*.sku' => 'nullable|string|max:255',
             'variantes.*.surcout' => 'nullable|numeric',
+            'variantes.*.stock_reel' => 'nullable|integer|min:0',
             'variantes.*.valeurs_ids' => 'array',
         ]);
 
@@ -122,12 +134,14 @@ class ProductController extends Controller
                         $variante->update([
                             'reference_sku' => $varianteData['sku'],
                             'surcout_prix' => $varianteData['surcout'] ?? 0,
+                            'stock_reel' => $varianteData['stock_reel'] ?? $variante->stock_reel,
                         ]);
                     }
                 } else {
                     $variante = $produit_modele->variantes()->create([
                         'reference_sku' => $varianteData['sku'],
                         'surcout_prix' => $varianteData['surcout'] ?? 0,
+                        'stock_reel' => $varianteData['stock_reel'] ?? 0,
                     ]);
                 }
 

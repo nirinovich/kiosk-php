@@ -61,7 +61,6 @@ class CommandeController extends Controller
     public function create()
     {
         $variantes = ProduitVariante::with('modele')
-            ->where('stock_reel', '>', 0)
             ->get()
             ->map(function ($variante) {
                 return [
