@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { LayoutGrid, PackageSearch, Receipt } from 'lucide-react';
+import { LayoutGrid, PackageSearch, Receipt, Users, ShoppingBag, UserCircle } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -28,12 +28,12 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Produits',
         href: products.index(),
-        icon: PackageSearch,
+        icon: ShoppingBag,
     },
     {
         title: 'Clients',
         href: clients.index(),
-        icon: PackageSearch,
+        icon: UserCircle,
     },
     {
         title: 'Journal des ventes',
@@ -43,7 +43,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Users',
         href: users.index(),
-        icon: PackageSearch,
+        icon: Users,
     },
 ];
 
