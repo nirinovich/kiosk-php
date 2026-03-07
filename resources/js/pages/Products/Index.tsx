@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
+import { router } from '@inertiajs/react';
 import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -40,6 +41,7 @@ interface Produit_modele {
     id_modele: number,
     name: string,
     prix_standard: number,
+    image_url: string,
     description: string
 }
 
@@ -48,10 +50,13 @@ interface PagePropos {
         message?: string
     }
     produit_modele : Produit_modele[]
+    filters: {
+        search?: string
+    }
 }
 
 export default function Index() {
-    const { produit_modele, flash } = usePage().props as PagePropos;
+    const { produit_modele, flash, filters } = usePage().props as PagePropos;
 
     const {processing, delete:destroy} = useForm();
 
@@ -98,6 +103,14 @@ export default function Index() {
         } finally {
             setCatSaving(false);
         }
+    };
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        router.get(
+            products.index().url,
+            { search: e.target.value },
+            { preserveState: true, replace: true }
+        );
     };
 
     return (
@@ -153,6 +166,14 @@ export default function Index() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                <input
+                    type="text"
+                    placeholder="Search product..."
+                    defaultValue={filters.search}
+                    onChange={handleSearch}
+                    className="border rounded px-3 py-2"
+                />
             </div>
             <div>
                 <div>
@@ -177,6 +198,7 @@ export default function Index() {
                                 <TableHead>Name</TableHead>
                                 <TableHead>Price</TableHead>
                                 <TableHead>Description</TableHead>
+                                <TableHead>Image</TableHead>
                                 <TableHead className="text-center">Action</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -187,6 +209,7 @@ export default function Index() {
                                     <TableCell>{produit_modele.name}</TableCell>
                                     <TableCell>{produit_modele.prix_standard}</TableCell>
                                     <TableCell>{produit_modele.description}</TableCell>
+                                    <TableCell><img src={produit_modele.image_url} alt={produit_modele.name} className="w-16 h-16 object-cover rounded" /></TableCell>
                                     <TableCell className="text-center space-x-2">
                                         <Link href={products.edit(produit_modele.id_modele).url}><Button className='bg-slate-600 hover:bg-slate-700'>Edit</Button></Link>
                                         <Button disabled={processing} onClick={()=>handleDelete(produit_modele.id_modele, produit_modele.name)} className='bg-red-600 hover:bg-red-700'>Delete</Button>

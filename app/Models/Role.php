@@ -11,6 +11,8 @@ class Role extends Model
     public const GERANT = 'Gérant';
     public const VENDEUR = 'Vendeur';
 
+    protected $table = 'roles';
+
     protected $fillable = ['nom'];
 
     /**

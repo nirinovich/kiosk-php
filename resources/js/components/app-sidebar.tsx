@@ -17,6 +17,7 @@ import { dashboard } from '@/routes';
 import products from '@/routes/products';
 import clients from '@/routes/clients';
 import ventes from '@/routes/ventes';
+import users from '@/routes/users';
 
 const mainNavItems: NavItem[] = [
     {
@@ -38,6 +39,11 @@ const mainNavItems: NavItem[] = [
         title: 'Journal des ventes',
         href: ventes.index(),
         icon: Receipt,
+    },
+    {
+        title: 'Users',
+        href: users.index(),
+        icon: PackageSearch,
     },
 ];
 

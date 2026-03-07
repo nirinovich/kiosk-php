@@ -12,9 +12,23 @@ use Inertia\Inertia;
 
 class ProductController extends Controller
 {
-    public function index(){
-        $produit_modele = ProduitModele::with('variantes')->get();
-        return Inertia::render('Products/Index',compact('produit_modele'));
+    public function index(Request $request)
+    {
+        $search = $request->search;
+
+        $produit_modele = ProduitModele::query()
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            })
+            ->get();
+
+        return Inertia::render('Products/Index', [
+            'produit_modele' => $produit_modele,
+            'filters' => [
+                'search' => $search
+            ]
+        ]);
     }
 
     public function create(){
@@ -29,16 +43,28 @@ class ProductController extends Controller
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
             'stock_initial' => 'nullable|integer|min:0',
+            'image_url' => 'nullable|image',
             'variantes' => 'nullable|array',
             'variantes.*.stock_reel' => 'nullable|integer|min:0',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
         ]);
 
-        DB::transaction(function() use ($validated,$request){
+        $imagePath = null;
+        if ($request->hasFile('image_url')) {
+            $image = $request->file('image_url');
+            $imageName = time().'_'.$image->getClientOriginalName();
+
+            $image->move(public_path('images'), $imageName);
+
+            $imagePath = 'images/'.$imageName;
+        }
+
+        DB::transaction(function() use ($validated,$request,$imagePath){
             $produit = ProduitModele::create([
                 'name' => $validated['name'],
                 'prix_standard' => $validated['prix_standard'],
                 'description' => $validated['description'],
+                'image_url' => $imagePath,
                 'id_categorie' => $validated['id_categorie'],
             ]);
             if(empty($validated['variantes'])){
@@ -90,7 +116,8 @@ class ProductController extends Controller
         return Inertia::render('Products/Edit', [
             'produit_modele' => $produit_modele,
             'attributs' => $attributs,
-            'categories' => $categories
+            'image_url' => $produit_modele->image_url,
+            'categories' => $categories,
         ]);
     }
 
@@ -100,6 +127,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
+            'image_url' => 'nullable|string',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
             
             'variantes' => 'array',
@@ -115,6 +143,7 @@ class ProductController extends Controller
                 'name' => $request->input('name'),
                 'prix_standard' => $request->input('prix_standard'),
                 'description' => $request->input('description'),
+                'image_url' => $request->input('image_url'),
                 'id_categorie' => $request->input('id_categorie'),
             ]);
 
