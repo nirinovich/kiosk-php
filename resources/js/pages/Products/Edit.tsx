@@ -8,6 +8,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InfoIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import products from '@/routes/products';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { useState } from 'react';
+import axios from 'axios';
 
 interface Valeur{
     id_valeur : number,
@@ -55,7 +66,13 @@ interface Props {
     categories: Categorie[];
 }
 
-export default function Edit({produit_modele, attributs, categories} : Props) {
+export default function Edit({produit_modele, attributs, categories: initialCategories} : Props) {
+    const [categories, setCategories] = useState<Categorie[]>(initialCategories);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [newCatNom, setNewCatNom] = useState('');
+    const [newCatDesc, setNewCatDesc] = useState('');
+    const [catSaving, setCatSaving] = useState(false);
+    const [catError, setCatError] = useState('');
 
     const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -112,6 +129,36 @@ export default function Edit({produit_modele, attributs, categories} : Props) {
         put(products.update(produit_modele.id_modele).url)
     };
 
+    const handleCreateCategory = async () => {
+        if (!newCatNom.trim()) {
+            setCatError('Le nom est obligatoire.');
+            return;
+        }
+        setCatSaving(true);
+        setCatError('');
+        try {
+            const response = await axios.post('/categories', {
+                nom: newCatNom,
+                description: newCatDesc,
+            });
+            const newCat = response.data;
+            setCategories(prev => [...prev, newCat]);
+            setData('id_categorie', newCat.id_categorie);
+            setNewCatNom('');
+            setNewCatDesc('');
+            setDialogOpen(false);
+        } catch (error: any) {
+            if (error.response?.status === 422) {
+                const msgs = error.response.data.errors;
+                setCatError(Object.values(msgs).flat().join(' '));
+            } else {
+                setCatError('Une erreur est survenue.');
+            }
+        } finally {
+            setCatSaving(false);
+        }
+    };
+
     /// --------PARTIE FRONT END---------///
     /// ****Nataon ny back IA fotsiny****///
 
@@ -153,22 +200,66 @@ export default function Edit({produit_modele, attributs, categories} : Props) {
                         </div>
                         <div>
                             <Label htmlFor='categorie_id'>Catégorie</Label>
-                            <select
-                                id="id_categorie"
-                                value={data.id_categorie}
-                                onChange={(e) => setData('id_categorie', Number(e.target.value))}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
-                            >
-                                <option value="">-- Choisissez une catégorie --</option>
-                                {categories.map((categorie) => (
-                                    <option
-                                        key={categorie.id_categorie}
-                                        value={categorie.id_categorie}
-                                    >
-                                        {categorie.nom}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="flex gap-2 mt-1">
+                                <select
+                                    id="id_categorie"
+                                    value={data.id_categorie}
+                                    onChange={(e) => setData('id_categorie', Number(e.target.value))}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                >
+                                    <option value="">-- Choisissez une catégorie --</option>
+                                    {categories.map((categorie) => (
+                                        <option
+                                            key={categorie.id_categorie}
+                                            value={categorie.id_categorie}
+                                        >
+                                            {categorie.nom}
+                                        </option>
+                                    ))}
+                                </select>
+                                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button type="button" variant="outline" size="icon" className="shrink-0" title="Nouvelle catégorie">
+                                            <PlusIcon className="h-4 w-4" />
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Nouvelle catégorie</DialogTitle>
+                                            <DialogDescription>Créez une catégorie qui sera immédiatement disponible.</DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-2">
+                                            <div>
+                                                <Label htmlFor="edit-new-cat-nom">Nom *</Label>
+                                                <Input
+                                                    id="edit-new-cat-nom"
+                                                    placeholder="Ex: Électronique"
+                                                    value={newCatNom}
+                                                    onChange={(e) => setNewCatNom(e.target.value)}
+                                                    className="mt-1"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="edit-new-cat-desc">Description</Label>
+                                                <Textarea
+                                                    id="edit-new-cat-desc"
+                                                    placeholder="Description optionnelle"
+                                                    value={newCatDesc}
+                                                    onChange={(e) => setNewCatDesc(e.target.value)}
+                                                    className="mt-1"
+                                                />
+                                            </div>
+                                            {catError && <p className="text-sm text-destructive">{catError}</p>}
+                                        </div>
+                                        <DialogFooter>
+                                            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
+                                            <Button type="button" onClick={handleCreateCategory} disabled={catSaving}>
+                                                {catSaving ? 'Création...' : 'Créer'}
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
                         </div>
                     </div>
 

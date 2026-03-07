@@ -3,6 +3,7 @@
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CategorieController;
 use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\FactureController;
 use Illuminate\Support\Facades\Route;
@@ -49,6 +50,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/products/{produit_modele}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{produit_modele}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{produit_modele}', [ProductController::class, 'destroy'])->name('products.destroy');
+
+    // Catégories (création inline depuis la page produit)
+    Route::post('/categories', [CategorieController::class, 'store'])->name('categories.store');
 
     // Clients
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');

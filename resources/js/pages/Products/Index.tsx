@@ -4,7 +4,7 @@ import type { BreadcrumbItem } from '@/types';
 import products from '@/routes/products';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, PlusIcon, CheckIcon } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -13,7 +13,21 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useState } from 'react';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -41,17 +55,104 @@ export default function Index() {
 
     const {processing, delete:destroy} = useForm();
 
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [newCatNom, setNewCatNom] = useState('');
+    const [newCatDesc, setNewCatDesc] = useState('');
+    const [catSaving, setCatSaving] = useState(false);
+    const [catError, setCatError] = useState('');
+    const [catSuccess, setCatSuccess] = useState('');
+
     const handleDelete =(id:number, name:string) => {
         if(confirm(`Do you want to delete a product - ${id} . ${name}`)){
             destroy(`/products/${id}`);
         }
     }
 
+    const handleCreateCategory = async () => {
+        if (!newCatNom.trim()) {
+            setCatError('Le nom est obligatoire.');
+            return;
+        }
+        setCatSaving(true);
+        setCatError('');
+        setCatSuccess('');
+        try {
+            const response = await axios.post('/categories', {
+                nom: newCatNom,
+                description: newCatDesc,
+            });
+            setCatSuccess(`Catégorie "${response.data.nom}" créée avec succès !`);
+            setNewCatNom('');
+            setNewCatDesc('');
+            setTimeout(() => {
+                setDialogOpen(false);
+                setCatSuccess('');
+            }, 1200);
+        } catch (error: any) {
+            if (error.response?.status === 422) {
+                const msgs = error.response.data.errors;
+                setCatError(Object.values(msgs).flat().join(' '));
+            } else {
+                setCatError('Une erreur est survenue.');
+            }
+        } finally {
+            setCatSaving(false);
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Products" />
-            <div className='m-4'>
+            <div className='m-4 flex gap-2'>
                 <Link href={products.create()}><Button>Create a product</Button></Link>
+
+                <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); setCatError(''); setCatSuccess(''); }}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline">
+                            <PlusIcon className="h-4 w-4 mr-2" /> Créer une catégorie
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Nouvelle catégorie</DialogTitle>
+                            <DialogDescription>Créez une catégorie qui sera disponible lors de la création de produits.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-2">
+                            <div>
+                                <Label htmlFor="new-cat-nom">Nom *</Label>
+                                <Input
+                                    id="new-cat-nom"
+                                    placeholder="Ex: Électronique"
+                                    value={newCatNom}
+                                    onChange={(e) => setNewCatNom(e.target.value)}
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="new-cat-desc">Description</Label>
+                                <Textarea
+                                    id="new-cat-desc"
+                                    placeholder="Description optionnelle"
+                                    value={newCatDesc}
+                                    onChange={(e) => setNewCatDesc(e.target.value)}
+                                    className="mt-1"
+                                />
+                            </div>
+                            {catError && <p className="text-sm text-destructive">{catError}</p>}
+                            {catSuccess && (
+                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                    <CheckIcon className="h-4 w-4" /> {catSuccess}
+                                </p>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
+                            <Button type="button" onClick={handleCreateCategory} disabled={catSaving}>
+                                {catSaving ? 'Création...' : 'Créer'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
             <div>
                 <div>

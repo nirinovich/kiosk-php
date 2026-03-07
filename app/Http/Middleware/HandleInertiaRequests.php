@@ -10,7 +10,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * The root template that's loaded on the first page visit.
      *
-     * @see https://inertiajs.com/server-side-setup#root-template
+     * @sea https://inertiajs.com/server-side-setup#root-template
      *
      * @var string
      */
@@ -45,7 +45,8 @@ class HandleInertiaRequests extends Middleware
                 ) : null,
             ],
             'flash' => [
-                'message' => fn() => $request -> session() -> get('message')
+                'message' => fn() => $request->session()->get('message'),
+                'success' => fn() => $request->session()->get('success'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
