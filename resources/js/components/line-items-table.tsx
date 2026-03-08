@@ -9,6 +9,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Trash2, AlertTriangle } from 'lucide-react';
+import { Badge } from './ui/badge';
 
 export interface LigneItem {
     id_variante: number;
@@ -18,6 +19,7 @@ export interface LigneItem {
     taux_tva: number;
     remise_ligne: number;
     stock_reel: number;
+    est_pack: boolean;
 }
 
 interface LineItemsTableProps {
@@ -55,13 +57,14 @@ export function LineItemsTable({ lignes, onUpdateQuantite, onRemove, disabled }:
                         return (
                             <TableRow key={`${ligne.id_variante}-${index}`} className={ligne.quantite >= ligne.stock_reel ? 'bg-orange-50 dark:bg-orange-950/20' : ''}>
                                 <TableCell>
-                                    <span className="font-medium">{ligne.designation}</span>
-                                    {ligne.quantite >= ligne.stock_reel && (
-                                        <span className="ml-2 inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
-                                            <AlertTriangle className="h-3 w-3" />
-                                            Stock limité ({ligne.stock_reel})
-                                        </span>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">{ligne.designation}</span>
+                                        {ligne.est_pack && (
+                                            <Badge className="bg-purple-600 hover:bg-purple-700 text-[10px] px-1.5 py-0">
+                                                PACK
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {Number(ligne.prix_unitaire).toLocaleString('fr-FR')} Ar

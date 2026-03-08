@@ -39,7 +39,7 @@ class CommandeService
             // Valider le stock et préparer les lignes
             $lignesPreparees = [];
             foreach ($data['lignes'] as $ligne) {
-                $variante = ProduitVariante::with('modele')->lockForUpdate()->find($ligne['id_variante']);
+                $variante = ProduitVariante::with(['modele','composants'])->lockForUpdate()->find($ligne['id_variante']);
 
                 if (!$variante) {
                     throw ValidationException::withMessages([
@@ -47,9 +47,9 @@ class CommandeService
                     ]);
                 }
 
-                if ($variante->stock_reel < $ligne['quantite']) {
+                if ($variante->stock_disponible < $ligne['quantite']) {
                     throw ValidationException::withMessages([
-                        'lignes' => "Stock insuffisant pour « {$variante->modele->name} » (disponible : {$variante->stock_reel}, demandé : {$ligne['quantite']}).",
+                        'lignes' => "Stock insuffisant pour « {$variante->modele->name} » (disponible : {$variante->stock_disponible}, demandé : {$ligne['quantite']}).",
                     ]);
                 }
 

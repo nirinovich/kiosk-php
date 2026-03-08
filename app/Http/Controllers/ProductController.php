@@ -17,9 +17,8 @@ class ProductController extends Controller
         $search = $request->search;
 
         $produit_modele = ProduitModele::query()
-            ->with('categorie')
+            ->with(['categorie', 'variantes.composants']) 
             ->withCount('variantes')
-            ->withSum('variantes', 'stock_reel')
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -29,7 +28,13 @@ class ProductController extends Controller
                       });
                 });
             })
-            ->get();
+            ->get()
+            ->map(function ($modele) {
+                $modele->variantes_sum_stock_reel = $modele->variantes->sum(function ($variante) {
+                    return $variante->stock_disponible ?? $variante->stock_reel; 
+                });
+                return $modele;
+            });
 
         return Inertia::render('Products/Index', [
             'produit_modele' => $produit_modele,

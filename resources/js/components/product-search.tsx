@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export interface Variante {
     id_variante: number;
@@ -9,6 +10,7 @@ export interface Variante {
     code_barre: string | null;
     stock_reel: number;
     prix_unitaire: number;
+    est_pack: boolean;
 }
 
 interface ProductSearchProps {
@@ -79,12 +81,20 @@ export function ProductSearch({ variantes, onSelect, disabled }: ProductSearchPr
                             onClick={() => handleSelect(variante)}
                             disabled={variante.stock_reel === 0}
                         >
-                            <div className="flex flex-col items-start">
+                        <div className="flex flex-col items-start gap-1">
+                            <div className="flex items-center gap-2">
                                 <span className="font-medium">{variante.designation}</span>
-                                {variante.reference_sku && (
-                                    <span className="text-xs text-muted-foreground">SKU: {variante.reference_sku}</span>
+                                {/* LE BADGE PACK ICI */}
+                                {variante.est_pack && (
+                                    <Badge className="bg-purple-600 hover:bg-purple-700 text-[10px] px-1.5 py-0 border-none">
+                                        PACK
+                                    </Badge>
                                 )}
                             </div>
+                            {variante.reference_sku && (
+                                <span className="text-xs text-muted-foreground">SKU: {variante.reference_sku}</span>
+                            )}
+                        </div>
                             <div className="flex flex-col items-end text-xs">
                                 <span className="font-medium">{Number(variante.prix_unitaire).toLocaleString('fr-FR')} Ar</span>
                                 <span className={variante.stock_reel === 0 ? 'text-destructive font-medium' : variante.stock_reel <= 5 ? 'text-orange-500' : 'text-muted-foreground'}>

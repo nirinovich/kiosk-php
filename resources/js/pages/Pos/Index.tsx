@@ -32,6 +32,7 @@ interface PosProduct {
     stock: number;
     image_url: string | null;
     id_categorie: number | null;
+    est_pack: boolean;
 }
 
 interface Category {
@@ -50,6 +51,7 @@ interface OrderLine {
     prix_unitaire: number;
     quantite: number;
     stock: number;
+    est_pack: boolean;
 }
 
 interface PageProps {
@@ -141,6 +143,7 @@ export default function PosIndex() {
                     prix_unitaire: product.prix,
                     quantite: 1,
                     stock: product.stock,
+                    est_pack: product.est_pack,
                 },
             ];
         });
@@ -599,6 +602,15 @@ export default function PosIndex() {
                                                 ) : (
                                                     <div className="flex h-full w-full items-center justify-center">
                                                         <Package className="h-8 w-8 text-muted-foreground/40" />
+                                                    </div>
+                                                )}
+
+                                                {/* LE BADGE PACK */}
+                                                {product.est_pack && (
+                                                    <div className="absolute top-1.5 left-1.5 z-10">
+                                                        <Badge className="bg-purple-600 hover:bg-purple-700 text-[10px] px-1.5 py-0 shadow border-none">
+                                                            PACK
+                                                        </Badge>
                                                     </div>
                                                 )}
 
