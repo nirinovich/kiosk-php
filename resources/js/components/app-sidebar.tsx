@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { LayoutGrid, PackageSearch, Receipt, Users, ShoppingBag, UserCircle, MonitorSmartphone } from 'lucide-react';
+import { LayoutGrid, PackageSearch, Receipt, Users, ShoppingBag, UserCircle, Store } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -29,7 +29,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Point de vente',
         href: pos.index(),
-        icon: MonitorSmartphone,
+        icon: Store,
     },
     {
         title: 'Journal des ventes',
