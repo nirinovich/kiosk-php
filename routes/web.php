@@ -7,6 +7,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CategorieController;
 use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\FactureController;
+use App\Http\Controllers\PosController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -76,6 +77,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Factures
     Route::post('/factures', [FactureController::class, 'store'])->name('factures.store');
     Route::get('/factures/{facture}', [FactureController::class, 'show'])->name('factures.show');
+
+    // Point de Vente (POS)
+    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+    Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
 });
 
 Route::middleware(['auth', 'role:Admin,Gérant'])->group(function () {
