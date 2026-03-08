@@ -75,8 +75,9 @@ export function ProductSearch({ variantes, onSelect, disabled }: ProductSearchPr
                         <button
                             key={variante.id_variante}
                             type="button"
-                            className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                            className={`flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer ${variante.stock_reel === 0 ? 'opacity-50' : ''}`}
                             onClick={() => handleSelect(variante)}
+                            disabled={variante.stock_reel === 0}
                         >
                             <div className="flex flex-col items-start">
                                 <span className="font-medium">{variante.designation}</span>
@@ -86,7 +87,9 @@ export function ProductSearch({ variantes, onSelect, disabled }: ProductSearchPr
                             </div>
                             <div className="flex flex-col items-end text-xs">
                                 <span className="font-medium">{Number(variante.prix_unitaire).toLocaleString('fr-FR')} Ar</span>
-                                <span className="text-muted-foreground">Stock: {variante.stock_reel}</span>
+                                <span className={variante.stock_reel === 0 ? 'text-destructive font-medium' : variante.stock_reel <= 5 ? 'text-orange-500' : 'text-muted-foreground'}>
+                                    {variante.stock_reel === 0 ? 'Rupture de stock' : `Stock: ${variante.stock_reel}`}
+                                </span>
                             </div>
                         </button>
                     ))}

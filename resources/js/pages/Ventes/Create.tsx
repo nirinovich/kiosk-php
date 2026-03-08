@@ -12,6 +12,8 @@ import { ClientSelect, type ClientOption } from '@/components/client-select';
 import { LineItemsTable, type LigneItem } from '@/components/line-items-table';
 import { OrderSummary } from '@/components/order-summary';
 import { FormErrors } from '@/components/form-errors';
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: dashboard().url },
@@ -100,12 +102,24 @@ export default function Create({ variantes, clients }: Props) {
         post(ventes.store().url);
     }
 
+    const stockWarnings = lignes.filter((l) => l.quantite >= l.stock_reel);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Nouvelle vente" />
 
             <form onSubmit={handleSubmit} className="space-y-6 p-4">
                 <FormErrors errors={errors} />
+
+                {stockWarnings.length > 0 && (
+                    <Alert className="border-orange-300 bg-orange-50 text-orange-800 dark:border-orange-700 dark:bg-orange-950/30 dark:text-orange-300">
+                        <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                        <AlertDescription>
+                            <span className="font-medium">Attention au stock :</span>{' '}
+                            {stockWarnings.map((l) => `${l.designation} (${l.quantite}/${l.stock_reel})`).join(', ')}
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Left column: Product search + line items */}

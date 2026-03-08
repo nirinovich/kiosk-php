@@ -8,7 +8,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Trash2 } from 'lucide-react';
+import { Trash2, AlertTriangle } from 'lucide-react';
 
 export interface LigneItem {
     id_variante: number;
@@ -53,12 +53,13 @@ export function LineItemsTable({ lignes, onUpdateQuantite, onRemove, disabled }:
                     {lignes.map((ligne, index) => {
                         const sousTotal = ligne.prix_unitaire * ligne.quantite - ligne.remise_ligne;
                         return (
-                            <TableRow key={`${ligne.id_variante}-${index}`}>
+                            <TableRow key={`${ligne.id_variante}-${index}`} className={ligne.quantite >= ligne.stock_reel ? 'bg-orange-50 dark:bg-orange-950/20' : ''}>
                                 <TableCell>
                                     <span className="font-medium">{ligne.designation}</span>
-                                    {ligne.quantite > ligne.stock_reel && (
-                                        <span className="ml-2 text-xs text-destructive">
-                                            (stock: {ligne.stock_reel})
+                                    {ligne.quantite >= ligne.stock_reel && (
+                                        <span className="ml-2 inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+                                            <AlertTriangle className="h-3 w-3" />
+                                            Stock limité ({ligne.stock_reel})
                                         </span>
                                     )}
                                 </TableCell>
