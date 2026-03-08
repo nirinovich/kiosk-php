@@ -110,7 +110,7 @@ class CommandeService
                 // Créer le mouvement de stock
                 MouvementStock::create([
                     'id_variante' => $ligneData['id_variante'],
-                    'type' => 'sortie',
+                    'type' => 'vente',
                     'quantite' => $ligneData['quantite'],
                     'id_commande' => $commande->id,
                     'motif' => 'Vente ' . $numeroCommande,
