@@ -3,11 +3,12 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import products from '@/routes/products';
 import { dashboard } from '@/routes';
+import categories from '@/routes/categories';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { InfoIcon, PlusIcon, SearchIcon, PackageOpen, Pencil, Trash2 } from 'lucide-react';
+import { InfoIcon, PlusIcon, SearchIcon, PackageOpen, Pencil, Trash2, Tag } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -90,6 +91,12 @@ export default function Index() {
                         <Button>
                             <PlusIcon className="h-4 w-4 mr-2" />
                             Nouveau produit
+                        </Button>
+                    </Link>
+                    <Link href={categories.index().url}>
+                        <Button variant="outline">
+                            <Tag className="h-4 w-4 mr-2" />
+                            Catégories
                         </Button>
                     </Link>
                 </div>

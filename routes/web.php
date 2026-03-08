@@ -51,8 +51,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/products/{produit_modele}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{produit_modele}', [ProductController::class, 'destroy'])->name('products.destroy');
 
-    // Catégories (création inline depuis la page produit)
+    // Catégories
+    Route::get('/categories', [CategorieController::class, 'index'])->name('categories.index');
+    Route::get('/categories/create', [CategorieController::class, 'create'])->name('categories.create');
     Route::post('/categories', [CategorieController::class, 'store'])->name('categories.store');
+    Route::get('/categories/{categorie}/edit', [CategorieController::class, 'edit'])->name('categories.edit');
+    Route::put('/categories/{categorie}', [CategorieController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{categorie}', [CategorieController::class, 'destroy'])->name('categories.destroy');
 
     // Clients
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
