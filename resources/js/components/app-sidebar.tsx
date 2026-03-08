@@ -1,5 +1,9 @@
 import { Link } from '@inertiajs/react';
+<<<<<<< HEAD
 import { LayoutGrid, PackageSearch, Receipt, Users, ShoppingBag, UserCircle, Store } from 'lucide-react';
+=======
+import { LayoutGrid, PackageSearch, Receipt, Users, ShoppingBag, UserCircle, MonitorSmartphone, Warehouse } from 'lucide-react';
+>>>>>>> 0f92aa96b531d73c82e4e090635651114b5d7207
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -19,6 +23,7 @@ import clients from '@/routes/clients';
 import ventes from '@/routes/ventes';
 import users from '@/routes/users';
 import pos from '@/routes/pos';
+import stocks from '@/routes/stocks';
 
 const mainNavItems: NavItem[] = [
     {
@@ -45,6 +50,11 @@ const mainNavItems: NavItem[] = [
         title: 'Clients',
         href: clients.index(),
         icon: UserCircle,
+    },
+    {
+        title:'Stock',
+        href: stocks.index(),
+        icon: Warehouse,
     },
 ];
 

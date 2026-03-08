@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('mouvement_stocks', function (Blueprint $table) {
             $table->unsignedBigInteger('id_variante')->after('id');
-            $table->enum('type', ['entree', 'sortie'])->after('id_variante');
+            $table->enum('type', ['achat','vente','inventaire','retour','perte'])->after('id_variante');
             $table->integer('quantite')->after('type');
             $table->unsignedBigInteger('id_commande')->nullable()->after('quantite');
             $table->string('motif')->nullable()->after('id_commande');

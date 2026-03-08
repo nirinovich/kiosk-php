@@ -4,13 +4,20 @@ namespace App\Services;
 
 use App\Models\Commande;
 use App\Models\LigneCommande;
-use App\Models\MouvementStock;
 use App\Models\ProduitVariante;
+use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CommandeService
 {
+    protected StockService $stockService;
+
+    public function __construct(StockService $stockService)
+    {
+        $this->stockService = $stockService;
+    }
+
     /**
      * Créer une commande complète avec lignes, décrémentation de stock et mouvements.
      *
@@ -103,18 +110,15 @@ class CommandeService
                     'remise_ligne' => $ligneData['remise_ligne'],
                     'sous_total' => $ligneData['sous_total'],
                 ]);
-
-                // Décrémenter le stock
-                $ligneData['variante']->decrement('stock_reel', $ligneData['quantite']);
-
+                
                 // Créer le mouvement de stock
-                MouvementStock::create([
-                    'id_variante' => $ligneData['id_variante'],
-                    'type' => 'sortie',
-                    'quantite' => $ligneData['quantite'],
-                    'id_commande' => $commande->id,
-                    'motif' => 'Vente ' . $numeroCommande,
-                ]);
+                $this->stockService->mouvement(
+                    $ligneData['id_variante'],
+                    -$ligneData['quantite'],
+                    'vente',
+                    'Vente ' . $numeroCommande,
+                    $commande->id
+                );
             }
 
             return $commande->load('lignes', 'client');
