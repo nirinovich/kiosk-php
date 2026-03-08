@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Package, Plus, Trash2 } from 'lucide-react';
 
 interface Valeur {
     id_valeur: number;
@@ -16,6 +16,11 @@ interface Attribut {
     valeurs: Valeur[];
 }
 
+export interface ComposantFormData {
+    id_variante: number | string;
+    quantite: number | string;
+}
+
 export interface VarianteFormData {
     id_variante?: number;
     sku: string;
@@ -23,19 +28,22 @@ export interface VarianteFormData {
     stock_reel: number;
     valeurs_ids: number[];
     valeurs_custom: { attribut: string; valeur: string }[];
+    est_pack?:boolean;
+    composants?: ComposantFormData[];
 }
 
 interface Props {
     index: number;
     variante: VarianteFormData;
     attributs: Attribut[];
+    availableVariantes?: VarianteFormData[];
     onUpdate: (index: number, field: keyof VarianteFormData, value: any) => void;
     onDelete: (index: number) => void;
     onToggleValeur: (indexVariante: number, idValeur: number) => void;
     onAddCustomAttr: (indexVariante: number, attribut: string, valeur: string) => void;
 }
 
-export function VariantCard({ index, variante, attributs, onUpdate, onDelete, onToggleValeur, onAddCustomAttr }: Props) {
+export function VariantCard({ index, variante, attributs, availableVariantes = [], onUpdate, onDelete, onToggleValeur, onAddCustomAttr }: Props) {
     const handleAddCustom = () => {
         const attrInput = document.getElementById(`attr-name-${index}`) as HTMLInputElement;
         const valInput = document.getElementById(`attr-val-${index}`) as HTMLInputElement;
@@ -45,6 +53,30 @@ export function VariantCard({ index, variante, attributs, onUpdate, onDelete, on
             attrInput.value = '';
             valInput.value = '';
         }
+    };
+
+    const handleTogglePack = (checked: boolean) => {
+        onUpdate(index, 'est_pack', checked);
+        if (checked && (!variante.composants || variante.composants.length === 0)) {
+            onUpdate(index, 'composants', [{ id_variante: '', quantite: 1 }]);
+        }
+    };
+
+    const addComposant = () => {
+        const current = variante.composants || [];
+        onUpdate(index, 'composants', [...current, { id_variante: '', quantite: 1 }]);
+    };
+
+    const updateComposant = (cIndex: number, field: keyof ComposantFormData, value: any) => {
+        const current = [...(variante.composants || [])];
+        current[cIndex] = { ...current[cIndex], [field]: value };
+        onUpdate(index, 'composants', current);
+    };
+
+    const removeComposant = (cIndex: number) => {
+        const current = [...(variante.composants || [])];
+        current.splice(cIndex, 1);
+        onUpdate(index, 'composants', current);
     };
 
     return (
@@ -84,6 +116,7 @@ export function VariantCard({ index, variante, attributs, onUpdate, onDelete, on
                             className="mt-1"
                         />
                     </div>
+                    {!variante.est_pack && (
                     <div>
                         <Label className="text-xs">Stock initial</Label>
                         <Input
@@ -96,6 +129,79 @@ export function VariantCard({ index, variante, attributs, onUpdate, onDelete, on
                             className="mt-1"
                         />
                     </div>
+                    )}
+                </div>
+                {/* 📦 ZONE PACK */}
+                <div className="rounded-lg border p-4 bg-primary/5 border-primary/20 space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            id={`pack-${index}`}
+                            checked={variante.est_pack || false}
+                            onChange={(e) => handleTogglePack(e.target.checked)}
+                            className="h-4 w-4 rounded border-primary/50 text-primary focus:ring-primary"
+                        />
+                        <Label htmlFor={`pack-${index}`} className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                            <Package className="h-4 w-4 text-primary" />
+                            Cette déclinaison est un Pack (composé d'autres produits)
+                        </Label>
+                    </div>
+
+                    {variante.est_pack && (
+                        <div className="space-y-3 pl-6 border-l-2 border-primary/30">
+                            <Label className="text-xs text-muted-foreground">Contenu du pack</Label>
+                            
+                            {(variante.composants || []).map((composant, cIndex) => (
+                                <div key={cIndex} className="flex flex-col sm:flex-row gap-2">
+                                    <select
+                                        value={composant.id_variante}
+                                        onChange={e => updateComposant(cIndex, 'id_variante', e.target.value)}
+                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 flex-1"
+                                        required
+                                    >
+                                        <option value="" disabled>-- Choisir un produit --</option>
+                                        {availableVariantes.map(v => (
+                                            <option key={v.id_variante} value={v.id_variante}>
+                                                {v.sku}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            type="number"
+                                            step="0.001"
+                                            min="0.001"
+                                            placeholder="Qté"
+                                            value={composant.quantite}
+                                            onChange={e => updateComposant(cIndex, 'quantite', e.target.value)}
+                                            className="w-24 h-9"
+                                            required
+                                        />
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-9 w-9 text-destructive hover:bg-destructive/10 shrink-0"
+                                            onClick={() => removeComposant(cIndex)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={addComposant} 
+                                className="mt-2 h-8 text-xs border-dashed"
+                            >
+                                <Plus className="h-3 w-3 mr-1" /> Ajouter un composant
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Existing attributes */}

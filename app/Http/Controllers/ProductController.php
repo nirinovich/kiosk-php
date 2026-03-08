@@ -6,6 +6,7 @@ use App\Models\Attribut;
 use App\Models\ProduitModele;
 use App\Models\ValeurAttribut;
 use App\Models\Categorie;
+use App\Models\ProduitVariante;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -47,7 +48,10 @@ class ProductController extends Controller
     public function create(){
         $attributs = Attribut::with('valeurs')->get();
         $categories = Categorie::all();
-        return Inertia::render('Products/Create', compact('attributs', 'categories'));
+        $availableVariantes = ProduitVariante::select('id_variante', 'reference_sku as sku')
+        ->where('est_pack', false) 
+        ->get();
+        return Inertia::render('Products/Create', compact('attributs', 'categories', 'availableVariantes'));
     }
 
     public function store(Request $request){
@@ -60,6 +64,11 @@ class ProductController extends Controller
             'variantes' => 'nullable|array',
             'variantes.*.stock_reel' => 'nullable|integer|min:0',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
+
+            'variantes.*.est_pack' => 'nullable|boolean',
+            'variantes.*.composants' => 'nullable|array',
+            'variantes.*.composants.*.id_variante' => 'required_with:variantes.*.composants|integer|exists:produit_variantes,id_variante',
+            'variantes.*.composants.*.quantite' => 'required_with:variantes.*.composants|numeric|gt:0',
         ]);
 
         $imagePath = null;
@@ -86,13 +95,17 @@ class ProductController extends Controller
                     'reference_sku' => null,
                     'surcout_prix' => 0,
                     'stock_reel' => $validated['stock_initial'] ?? 0,
+                    'est_pack' => false,
                 ]);
             } else {
                 foreach($validated['variantes'] as $varianteData){
+                    $estPack = !empty($varianteData['est_pack']);
+
                     $nouvelleVariante = $produit->variantes()->create([
                         'reference_sku' => $varianteData['sku'] ?? null,
                         'surcout_prix' => $varianteData['surcout'] ?? 0,
-                        'stock_reel' => $varianteData['stock_reel'] ?? 0,
+                        'stock_reel' => $estPack ? 0 : ($varianteData['stock_reel'] ?? 0),
+                        'est_pack' => $estPack,
                     ]);
                     $idsAAjouter = $varianteData['valeurs_ids'] ?? [];
                     if(!empty($varianteData['valeurs_custom'])){
@@ -112,9 +125,21 @@ class ProductController extends Controller
                     if(!empty($idsAAjouter)){
                         $nouvelleVariante->valeurs()->attach($idsAAjouter);
                     }
+                    if ($estPack && !empty($varianteData['composants'])) {
+                        $composantsSync = [];
+                        
+                        // On prépare le tableau pour la table pivot (ex: composant_id => ['quantite' => X])
+                        foreach ($varianteData['composants'] as $composant) {
+                            $composantsSync[$composant['id_variante']] = [
+                                'quantite' => $composant['quantite']
+                            ];
+                        }
+                        
+                        // On attache les composants à notre nouvelle variante "pack"
+                        $nouvelleVariante->composants()->sync($composantsSync);
+                    }
                 }
             }
-
         });
         
         return redirect()->route('products.index')->with('message', 'Produit créé avec succès');
