@@ -9,6 +9,7 @@ use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\FactureController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -81,6 +82,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Point de Vente (POS)
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+
+    // Stock
+    Route::get('/stock', [StockController::class, 'index'])->name('stocks.index');
+    Route::get('/stock/historique', [StockController::class, 'historique'])->name('stocks.historique');
+    Route::post('/stock/ajustement', [StockController::class, 'ajustement'])->name('stocks.ajustement');
+    Route::get('/stock/modification', [StockController::class, 'modification'])->name('stocks.modification');
+
+
 });
 
 Route::middleware(['auth', 'role:Admin,Gérant'])->group(function () {
