@@ -1,9 +1,5 @@
 import { Link } from '@inertiajs/react';
-<<<<<<< HEAD
-import { LayoutGrid, PackageSearch, Receipt, Users, ShoppingBag, UserCircle, Store } from 'lucide-react';
-=======
-import { LayoutGrid, PackageSearch, Receipt, Users, ShoppingBag, UserCircle, MonitorSmartphone, Warehouse } from 'lucide-react';
->>>>>>> 0f92aa96b531d73c82e4e090635651114b5d7207
+import { LayoutGrid, Receipt, ShoppingBag, UserCircle, Store, Warehouse } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -52,10 +48,10 @@ const mainNavItems: NavItem[] = [
         icon: UserCircle,
     },
     {
-        title:'Stock',
+        title: 'Stock',
         href: stocks.index(),
         icon: Warehouse,
-    },
+    },   
 ];
 
 
