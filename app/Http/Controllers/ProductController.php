@@ -9,6 +9,7 @@ use App\Models\Categorie;
 use App\Models\ProduitVariante;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 
 class ProductController extends Controller
@@ -175,7 +176,8 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'prix_standard' => 'required|numeric',
             'description' => 'nullable|string',
-            'image_url' => 'nullable',
+            'image_url' => 'nullable|image',
+            'remove_image' => 'nullable|boolean',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
             'is_simple' => 'boolean',
             'stock_initial' => 'nullable|integer|min:0',
@@ -192,7 +194,27 @@ class ProductController extends Controller
         DB::transaction(function () use ($request, $produit_modele) {
             // Handle image upload
             $imageUrl = $produit_modele->image_url;
+            $removeImage = $request->boolean('remove_image', false);
+
+            if ($removeImage && $imageUrl) {
+                $existingImagePath = public_path($imageUrl);
+
+                if (File::exists($existingImagePath)) {
+                    File::delete($existingImagePath);
+                }
+
+                $imageUrl = null;
+            }
+
             if ($request->hasFile('image_url')) {
+                if ($imageUrl) {
+                    $existingImagePath = public_path($imageUrl);
+
+                    if (File::exists($existingImagePath)) {
+                        File::delete($existingImagePath);
+                    }
+                }
+
                 $image = $request->file('image_url');
                 $imageName = time() . '_' . $image->getClientOriginalName();
                 $image->move(public_path('images'), $imageName);

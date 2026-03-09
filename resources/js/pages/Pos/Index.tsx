@@ -35,6 +35,18 @@ interface PosProduct {
     est_pack: boolean;
 }
 
+const resolveImageUrl = (imageUrl: string | null) => {
+    if (!imageUrl) {
+        return null;
+    }
+
+    if (/^(https?:)?\/\//.test(imageUrl) || imageUrl.startsWith('/')) {
+        return imageUrl;
+    }
+
+    return `/${imageUrl.replace(/^\/+/, '')}`;
+};
+
 interface Category {
     id_categorie: number;
     nom: string;
@@ -595,7 +607,7 @@ export default function PosIndex() {
                                             <div className="relative aspect-square w-full overflow-hidden bg-muted">
                                                 {product.image_url ? (
                                                     <img
-                                                        src={`/storage/${product.image_url}`}
+                                                        src={resolveImageUrl(product.image_url) ?? undefined}
                                                         alt={product.nom}
                                                         className="h-full w-full object-cover transition-transform group-hover:scale-105"
                                                     />

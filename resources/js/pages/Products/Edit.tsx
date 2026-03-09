@@ -1,4 +1,4 @@
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -85,6 +85,7 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
         prix_standard: produit_modele.prix_standard,
         description: produit_modele.description || '',
         image_url: null as File | null,
+        remove_image: false,
         id_categorie: produit_modele.id_categorie || ('' as number | string),
         is_simple: isSimpleProduct,
         stock_initial: currentStock,
@@ -225,7 +226,9 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                 <ImageUpload
                                     value={data.image_url}
                                     currentImageUrl={produit_modele.image_url}
+                                    removeCurrent={data.remove_image}
                                     onChange={(file) => setData('image_url', file)}
+                                    onRemoveCurrentChange={(remove) => setData('remove_image', remove)}
                                 />
                             </div>
                         </CardContent>
