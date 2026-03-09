@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_modele');
             $table->string('reference_sku', 50)->unique()->nullable();
             $table->string('code_barre', 50)->nullable();
-            $table->integer('stock_reel')->default(0);
+            $table->decimal('stock_reel', 10, 3)->default(0);
             $table->decimal('surcout_prix', 10, 2)->default(0.00);
             $table->timestamps();
 

@@ -20,12 +20,15 @@ class PosController extends Controller
      */
     public function index()
     {
-        $produits = ProduitModele::with(['variantes', 'categorie'])
-            ->whereHas('variantes', fn($q) => $q->where('stock_reel', '>', 0))
-            ->orderBy('name')
+        $produits = ProduitModele::with(['variantes.composants', 'categorie'])
             ->get()
             ->map(function ($modele) {
-                return $modele->variantes->map(function ($variante) use ($modele) {
+                $variantesEnStock = $modele->variantes->filter(function ($v) {
+                    return $v->stock_disponible > 0; 
+                });
+                if ($variantesEnStock->isEmpty()) return null;
+
+                return $variantesEnStock->map(function ($variante) use ($modele) {
                     $suffix = '';
                     if ($modele->variantes->count() > 1 && $variante->reference_sku) {
                         $suffix = ' (' . $variante->reference_sku . ')';
@@ -34,13 +37,16 @@ class PosController extends Controller
                         'id_variante' => $variante->id_variante,
                         'nom' => $modele->name . $suffix,
                         'prix' => $modele->prix_standard + $variante->surcout_prix,
-                        'stock' => $variante->stock_reel,
+                        'stock' => $variante->stock_disponible, 
+                        'est_pack' => $variante->est_pack,
+                        
                         'image_url' => $modele->image_url,
                         'id_categorie' => $modele->id_categorie,
                     ];
                 });
             })
-            ->flatten(1);
+            ->flatten(1)
+            ->filter(); // Enlève les nulls
 
         $categories = Categorie::orderBy('nom')->get(['id_categorie', 'nom']);
         $clients = Client::orderBy('name')->get(['id_client', 'name']);

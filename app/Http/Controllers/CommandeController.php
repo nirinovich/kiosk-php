@@ -60,7 +60,7 @@ class CommandeController extends Controller
      */
     public function create()
     {
-        $variantes = ProduitVariante::with('modele')
+        $variantes = ProduitVariante::with(['modele', 'composants'])
             ->get()
             ->map(function ($variante) {
                 return [
@@ -68,7 +68,10 @@ class CommandeController extends Controller
                     'designation' => $variante->modele->name . ($variante->reference_sku ? ' (' . $variante->reference_sku . ')' : ''),
                     'reference_sku' => $variante->reference_sku,
                     'code_barre' => $variante->code_barre,
-                    'stock_reel' => $variante->stock_reel,
+                    'stock_reel' => $variante->stock_disponible,//pour eviter de casse 
+                    'stock_disponible' => $variante->stock_disponible,//pour creer des badges
+                    'est_pack' => $variante->est_pack,
+                    
                     'prix_unitaire' => $variante->modele->prix_standard + $variante->surcout_prix,
                 ];
             });

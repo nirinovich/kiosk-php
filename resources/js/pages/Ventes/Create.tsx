@@ -65,6 +65,7 @@ export default function Create({ variantes, clients }: Props) {
                     taux_tva: 20,
                     remise_ligne: 0,
                     stock_reel: variante.stock_reel,
+                    est_pack: variante.est_pack,
                 },
             ];
         }

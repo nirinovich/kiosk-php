@@ -7,27 +7,42 @@ use App\Models\ProduitVariante;
 
 class StockService
 {   
-
     public function mouvement($varianteId, $quantite, $type, $description = null, $commandeId = null)
     {
         $variante = ProduitVariante::lockForUpdate()->findOrFail($varianteId);
 
-        $variante->increment('stock_reel', $quantite);
+        if ($variante->est_pack) {
+            foreach ($variante->composants as $composant) {
+                $quantite_composant = $composant->pivot->quantite * $quantite;
+                $composant->increment('stock_reel', $quantite_composant);
 
-        MouvementStock::create([
-            'id_variante' => $varianteId,
-            'quantite' => $quantite,
-            'type' => $type,
-            'description' => $description,
-            'id_commande_origine' => $commandeId
-        ]);
+                MouvementStock::create([
+                    'id_variante' => $composant->id_variante,
+                    'quantite' => $quantite_composant,
+                    'type' => $type,
+                    'description' => $description . " (Via Pack : " . $variante->reference_sku . ")",
+                    'id_commande_origine' => $commandeId
+                ]);
+            }
+        } else {
+            $variante->increment('stock_reel', $quantite);
+
+            MouvementStock::create([
+                'id_variante' => $varianteId,
+                'quantite' => $quantite,
+                'type' => $type,
+                'description' => $description,
+                'id_commande_origine' => $commandeId
+            ]);
+        }
     }
+
     /**
      * Récupérer toutes les variantes avec stock.
      */
     public function getInventaire()
     {
-        return ProduitVariante::with('modele')
+        return ProduitVariante::with(['modele','composants'])
             ->get()
             ->map(function ($v) {
                 return [
@@ -35,6 +50,8 @@ class StockService
                     'reference_sku' => $v->reference_sku,
                     'modele' => ['name' => $v->modele->name],
                     'stock_reel' => $v->stock_reel,
+                    'est_pack' => $v->est_pack, 
+                    'stock_disponible' => $v->stock_disponible,
                 ];
             });
     }

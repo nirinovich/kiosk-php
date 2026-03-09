@@ -16,6 +16,8 @@ interface Variante {
     reference_sku: string;
     modele: Modele;
     stock_reel: number;
+    est_pack: boolean;
+    stock_disponible: number;
 }
 
 interface PageProps {
@@ -25,10 +27,22 @@ interface PageProps {
 export default function Index() {
     const { variantes } = usePage().props as unknown as PageProps;
 
-    function stockBadge(stock: number) {
+    function stockBadge(variante: Variante) {
+        const stock = variante.stock_disponible;
+        
         if (stock <= 0) return <Badge variant="destructive">Rupture</Badge>;
         if (stock <= 5) return <Badge variant="destructive">{stock}</Badge>;
-        return <Badge variant="destructive">{stock}</Badge>;
+        return (
+            <div className="flex items-center gap-2">
+                <Badge variant="secondary">{stock}</Badge>
+                {/* Petit indicateur visuel si c'est un pack */}
+                {variante.est_pack && (
+                    <span className="text-xs text-blue-500 font-medium bg-blue-50 px-2 py-0.5 rounded">
+                        Pack
+                    </span>
+                )}
+            </div>
+        );
     }
 
     const voirHistorique = (idVariante: number) => {
@@ -70,13 +84,14 @@ export default function Index() {
                             </TableHeader>
                             <TableBody>
                                 {variantes.map((v) => (
-                                    <TableRow key={v.id_variante}>
+                                    <TableRow 
+                                        key={v.id_variante}
+                                        onClick={() => voirHistorique(v.id_variante)}
+                                        className="cursor-pointer hover:bg-muted/50"
+                                    >
                                         <TableCell>{v.modele.name}</TableCell>
                                         <TableCell>{v.reference_sku}</TableCell>
-                                        <TableCell>{stockBadge(v.stock_reel)}</TableCell>
-                                        <TableCell>
-                                            <Button onClick={() => voirHistorique(v.id_variante)}>Voir Historique</Button>
-                                        </TableCell>
+                                        <TableCell>{stockBadge(v)}</TableCell> 
                                     </TableRow>
                                 ))}
                             </TableBody>

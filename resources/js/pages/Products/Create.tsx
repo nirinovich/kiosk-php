@@ -38,9 +38,15 @@ interface Attribut {
     valeurs: Valeur[];
 }
 
+interface DisponibleVariante {
+    id_variante: number;
+    sku: string;
+}
+
 interface Props {
     attributs: Attribut[];
     categories: Categorie[];
+    availableVariantes: DisponibleVariante[];
 }
 
 interface FormState {
@@ -53,7 +59,10 @@ interface FormState {
     variantes: VarianteFormData[];
 }
 
-export default function Create({ attributs, categories: initialCategories }: Props) {
+export default function Create({ attributs, categories: initialCategories, availableVariantes }: Props) {
+
+    console.log("Ce que Laravel envoie :", availableVariantes);
+    
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
     const [hasVariants, setHasVariants] = useState(false);
 
@@ -67,6 +76,16 @@ export default function Create({ attributs, categories: initialCategories }: Pro
         variantes: [],
     });
 
+    const emptyVariant: VarianteFormData = { 
+        sku: '', 
+        surcout: 0, 
+        stock_reel: 0, 
+        valeurs_ids: [], 
+        valeurs_custom: [],
+        est_pack: false,
+        composants: []
+    };
+
     const toggleVariantMode = () => {
         if (hasVariants) {
             // Switching back to simple — clear variants
@@ -74,7 +93,7 @@ export default function Create({ attributs, categories: initialCategories }: Pro
             setHasVariants(false);
         } else {
             // Switching to variant mode — add one empty variant
-            setData('variantes', [{ sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [] }]);
+            setData('variantes', [emptyVariant]);
             setHasVariants(true);
         }
     };
@@ -82,7 +101,7 @@ export default function Create({ attributs, categories: initialCategories }: Pro
     const ajouterVariante = () => {
         setData('variantes', [
             ...data.variantes,
-            { sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [] },
+            emptyVariant
         ]);
     };
 
@@ -200,7 +219,7 @@ export default function Create({ attributs, categories: initialCategories }: Pro
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Layers className="h-5 w-5" />
-                                Stock & Déclinaisons
+                                Stock & Déclinaisons ou Packs
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -208,7 +227,7 @@ export default function Create({ attributs, categories: initialCategories }: Pro
                             <div className="flex items-center justify-between rounded-lg border p-4">
                                 <div>
                                     <p className="text-sm font-medium">
-                                        {hasVariants ? 'Produit avec déclinaisons' : 'Produit simple'}
+                                        {hasVariants ? 'Produit avec déclinaisons / Packs' : 'Produit simple'}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
                                         {hasVariants
@@ -247,6 +266,7 @@ export default function Create({ attributs, categories: initialCategories }: Pro
                                             index={index}
                                             variante={variante}
                                             attributs={attributs}
+                                            availableVariantes={availableVariantes}
                                             onUpdate={updateVariante}
                                             onDelete={supprimerVariante}
                                             onToggleValeur={toggleValeur}
@@ -260,7 +280,7 @@ export default function Create({ attributs, categories: initialCategories }: Pro
                                         className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 p-4 text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground"
                                     >
                                         <PlusIcon className="h-4 w-4" />
-                                        Ajouter une variante
+                                        Ajouter une variante ou Pack
                                     </button>
                                 </div>
                             )}
