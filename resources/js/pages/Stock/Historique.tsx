@@ -3,6 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
+import stocks from '@/routes/stocks';
 
 interface Modele {
     name: string;
@@ -14,9 +15,11 @@ interface Variante {
     modele: Modele;
 }
 
+type MouvementType = 'achat' | 'vente' | 'inventaire' | 'retour' | 'perte' | string;
+
 interface Mouvement {
     id: number;
-    type: string;
+    type: MouvementType;
     quantite: number;
     motif: string;
     created_at: string;
@@ -30,38 +33,49 @@ interface PageProps {
 export default function Historique() {
     const { mouvements = [] } = usePage().props as unknown as PageProps;
 
-    function typeBadge(type: string) {
+    // Breadcrumbs pour la navigation
+    const breadcrumbs = [
+        { title: 'Dashboard', href: '/' },
+        { title: 'Stock', href: stocks.index() },
+        { title: 'Historique', href: stocks.historique() },
+    ];
+
+    function typeBadge(type: MouvementType) {
         switch (type) {
             case 'vente':
                 return <Badge variant="destructive">{type}</Badge>;
             case 'achat':
-                return <Badge variant="destructive">{type}</Badge>;
+            return <Badge variant="secondary">{type}</Badge>;
+        case 'inventaire':
+            return <Badge variant="outline">{type}</Badge>;
             case 'retour':
                 return <Badge variant="secondary">{type}</Badge>;
+        case 'perte':
+            return <Badge variant="destructive">{type}</Badge>;
             default:
                 return <Badge>{type}</Badge>;
         }
     }
 
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Historique du Stock" />
             <div className="p-4">
                 <div className="flex gap-2">
                     <Link 
-                        href="/stock" 
+                        href={stocks.index()}
                         className={buttonVariants({ variant: 'outline' })}
                     >
                         Inventaire
                     </Link>
                     <Link 
-                        href="/stock/historique" 
+                        href={stocks.historique()}
                         className={buttonVariants({ variant: 'default' })}
                     >
                         Historique
                     </Link>
                     <Link 
-                        href="/stock/modification" 
+                        href={stocks.modification()}
                         className={buttonVariants({ variant: 'outline' })}
                     >
                         Modifier
