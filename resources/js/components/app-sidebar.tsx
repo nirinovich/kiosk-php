@@ -43,15 +43,15 @@ const mainNavItems: NavItem[] = [
         icon: ShoppingBag,
     },
     {
-        title: 'Clients',
-        href: clients.index(),
-        icon: UserCircle,
-    },
-    {
         title: 'Stock',
         href: stocks.index(),
         icon: Warehouse,
     },   
+    {
+        title: 'Clients',
+        href: clients.index(),
+        icon: UserCircle,
+    },
 ];
 
 
