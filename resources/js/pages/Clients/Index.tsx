@@ -4,16 +4,9 @@ import type { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { InfoIcon, PlusIcon, SearchIcon, UserCircle, Pencil, Trash2 } from 'lucide-react';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { InfoIcon, PlusIcon, SearchIcon, UserCircle, Pencil, Trash2, Mail, Phone } from 'lucide-react';
 import clients from '@/routes/clients';
 import { dashboard } from '@/routes';
 
@@ -25,13 +18,14 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Client {
     id_client: number;
     name: string;
-    email: string;
-    phone: string;
-    adresse: string;
+    email: string | null;
+    telephone: string | null;
+    adresse: string | null;
     type_client: string;
     nif: string;
     stat: string;
     rcs_ville: string;
+    commandes_count: number;
 }
 
 interface PageProps {
@@ -88,55 +82,74 @@ export default function Index() {
                     </Alert>
                 )}
 
-                {/* Client table or empty state */}
+                {/* Client grid or empty state */}
                 {client.length > 0 ? (
-                    <div className="rounded-lg border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Nom</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Téléphone</TableHead>
-                                    <TableHead>Adresse</TableHead>
-                                    <TableHead className="text-center">Type</TableHead>
-                                    <TableHead className="text-center">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {client.map((c) => (
-                                    <TableRow key={c.id_client}>
-                                        <TableCell className="font-medium">{c.name}</TableCell>
-                                        <TableCell className="text-muted-foreground">{c.email || '—'}</TableCell>
-                                        <TableCell>{c.phone || '—'}</TableCell>
-                                        <TableCell className="max-w-[200px] truncate">{c.adresse || '—'}</TableCell>
-                                        <TableCell className="text-center">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {client.map((c) => (
+                            <Card
+                                key={c.id_client}
+                                className="flex flex-col justify-between hover:shadow-md transition-shadow"
+                            >
+                                <CardHeader className="flex flex-row items-start gap-3 pb-3">
+                                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                        <UserCircle className="h-7 w-7 text-muted-foreground" />
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                        <CardTitle className="text-base font-semibold">
+                                            {c.name}
+                                        </CardTitle>
+                                        <div className="flex items-center gap-2">
                                             <Badge variant={c.type_client === 'entreprise' ? 'default' : 'secondary'}>
                                                 {c.type_client === 'entreprise' ? 'Entreprise' : 'Particulier'}
                                             </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Link href={clients.edit(c.id_client).url}>
-                                                    <Button variant="ghost" size="icon" title="Modifier">
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    disabled={processing}
-                                                    onClick={() => handleDelete(c.id_client, c.name)}
-                                                    title="Supprimer"
-                                                    className="text-destructive hover:text-destructive"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <div className="space-y-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Mail className="h-4 w-4" />
+                                            <span className="truncate">
+                                                {c.email ?? 'Pas d’information'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Phone className="h-4 w-4" />
+                                            <span>
+                                                {c.telephone ?? 'Pas d’information'}
+                                            </span>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground line-clamp-2">
+                                            {c.adresse ?? 'Pas d’adresse renseignée'}
+                                        </div>
+                                        <div className="text-xs font-medium text-foreground pt-1">
+                                            {c.commandes_count} commande(s)
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2 pt-2">
+                                        <Link href={clients.edit(c.id_client).url} className="flex-1">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className="w-full justify-center"
+                                            >
+                                                <Pencil className="h-4 w-4 mr-1" />
+                                                Modifier
+                                            </Button>
+                                        </Link>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            disabled={processing}
+                                            onClick={() => handleDelete(c.id_client, c.name)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-20 text-center">

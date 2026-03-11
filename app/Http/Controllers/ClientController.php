@@ -11,9 +11,13 @@ class ClientController extends Controller
     public function index(){
         $search = request()->query('search');
         $client = Client::query()
+            ->withCount('commandes')
             ->when($search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('telephone', 'like', "%{$search}%");
+                });
             })
             ->get();
 
