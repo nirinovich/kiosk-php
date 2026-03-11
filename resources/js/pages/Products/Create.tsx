@@ -142,150 +142,151 @@ export default function Create({ attributs, categories: initialCategories, avail
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Nouveau produit" />
-            <div className="max-w-3xl mx-auto p-4 space-y-6">
+            <div className="w-full max-w-6xl mx-auto p-4 space-y-6">
                 <FormErrors errors={errors} />
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* ── Section 1: Product Info ── */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Package className="h-5 w-5" />
-                                Informations du produit
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <Label htmlFor="name">Nom du produit *</Label>
-                                <Input
-                                    id="name"
-                                    placeholder="Ex : T-Shirt classique"
-                                    value={data.name}
-                                    onChange={(e) => setData('name', e.target.value)}
-                                    className="mt-1"
-                                />
-                                {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        {/* ── Section 1: Product Info ── */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Package className="h-5 w-5" />
+                                    Informations du produit
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
                                 <div>
-                                    <Label htmlFor="prix_standard">Prix standard (HT) *</Label>
+                                    <Label htmlFor="name">Nom du produit *</Label>
                                     <Input
-                                        id="prix_standard"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0.00"
-                                        value={data.prix_standard}
-                                        onChange={(e) => setData('prix_standard', e.target.value)}
+                                        id="name"
+                                        placeholder="Ex : T-Shirt classique"
+                                        value={data.name}
+                                        onChange={(e) => setData('name', e.target.value)}
                                         className="mt-1"
                                     />
-                                    {errors.prix_standard && <p className="text-xs text-destructive mt-1">{errors.prix_standard}</p>}
+                                    {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
                                 </div>
-                                <div>
-                                    <CategoryCombobox
-                                        categories={categories}
-                                        value={data.id_categorie}
-                                        onChange={(v) => setData('id_categorie', v)}
-                                        onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
-                                    />
-                                </div>
-                            </div>
 
-                            <div>
-                                <Label htmlFor="description">Description</Label>
-                                <Textarea
-                                    id="description"
-                                    placeholder="Description du produit (optionnel)"
-                                    value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
-                                    className="mt-1"
-                                    rows={3}
-                                />
-                            </div>
-
-                            <div>
-                                <Label>Image du produit</Label>
-                                <ImageUpload
-                                    value={data.image_url}
-                                    onChange={(file) => setData('image_url', file)}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* ── Section 2: Stock & Variants ── */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Layers className="h-5 w-5" />
-                                Stock & Déclinaisons ou Packs
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Mode toggle */}
-                            <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div>
-                                    <p className="text-sm font-medium">
-                                        {hasVariants ? 'Produit avec déclinaisons / Packs' : 'Produit simple'}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {hasVariants
-                                            ? 'Chaque variante a son propre stock (tailles, couleurs...)'
-                                            : 'Un seul article avec un stock global'}
-                                    </p>
-                                </div>
-                                <Button type="button" variant="outline" size="sm" onClick={toggleVariantMode}>
-                                    {hasVariants ? 'Passer en simple' : 'Ajouter des déclinaisons'}
-                                </Button>
-                            </div>
-
-                            {/* Simple mode: single stock input */}
-                            {!hasVariants && (
-                                <div>
-                                    <Label htmlFor="stock_initial">Stock initial</Label>
-                                    <Input
-                                        id="stock_initial"
-                                        type="number"
-                                        min="0"
-                                        step="1"
-                                        placeholder="0"
-                                        value={data.stock_initial}
-                                        onChange={(e) => setData('stock_initial', Number(e.target.value))}
-                                        className="mt-1 max-w-xs"
-                                    />
-                                </div>
-                            )}
-
-                            {/* Variant mode: variant cards */}
-                            {hasVariants && (
-                                <div className="space-y-4">
-                                    {data.variantes.map((variante, index) => (
-                                        <VariantCard
-                                            key={index}
-                                            index={index}
-                                            variante={variante}
-                                            attributs={attributs}
-                                            availableVariantes={availableVariantes}
-                                            onUpdate={updateVariante}
-                                            onDelete={supprimerVariante}
-                                            onToggleValeur={toggleValeur}
-                                            onAddCustomAttr={addCustomAttr}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="prix_standard">Prix standard (HT) *</Label>
+                                        <Input
+                                            id="prix_standard"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="0.00"
+                                            value={data.prix_standard}
+                                            onChange={(e) => setData('prix_standard', e.target.value)}
+                                            className="mt-1"
                                         />
-                                    ))}
-
-                                    <button
-                                        type="button"
-                                        onClick={ajouterVariante}
-                                        className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 p-4 text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground"
-                                    >
-                                        <PlusIcon className="h-4 w-4" />
-                                        Ajouter une variante ou Pack
-                                    </button>
+                                        {errors.prix_standard && (
+                                            <p className="text-xs text-destructive mt-1">{errors.prix_standard}</p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <CategoryCombobox
+                                            categories={categories}
+                                            value={data.id_categorie}
+                                            onChange={(v) => setData('id_categorie', v)}
+                                            onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                                        />
+                                    </div>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
+
+                                <div>
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        placeholder="Description du produit (optionnel)"
+                                        value={data.description}
+                                        onChange={(e) => setData('description', e.target.value)}
+                                        className="mt-1"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label>Image du produit</Label>
+                                    <ImageUpload value={data.image_url} onChange={(file) => setData('image_url', file)} />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* ── Section 2: Stock & Variants ── */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Layers className="h-5 w-5" />
+                                    Stock & Déclinaisons ou Packs
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {/* Mode toggle */}
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div>
+                                        <p className="text-sm font-medium">
+                                            {hasVariants ? 'Produit avec déclinaisons / Packs' : 'Produit simple'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {hasVariants
+                                                ? 'Chaque variante a son propre stock (tailles, couleurs...)'
+                                                : 'Un seul article avec un stock global'}
+                                        </p>
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" onClick={toggleVariantMode}>
+                                        {hasVariants ? 'Passer en simple' : 'Ajouter des déclinaisons'}
+                                    </Button>
+                                </div>
+
+                                {/* Simple mode: single stock input */}
+                                {!hasVariants && (
+                                    <div>
+                                        <Label htmlFor="stock_initial">Stock initial</Label>
+                                        <Input
+                                            id="stock_initial"
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            placeholder="0"
+                                            value={data.stock_initial}
+                                            onChange={(e) => setData('stock_initial', Number(e.target.value))}
+                                            className="mt-1 max-w-xs"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Variant mode: variant cards */}
+                                {hasVariants && (
+                                    <div className="space-y-4">
+                                        {data.variantes.map((variante, index) => (
+                                            <VariantCard
+                                                key={index}
+                                                index={index}
+                                                variante={variante}
+                                                attributs={attributs}
+                                                availableVariantes={availableVariantes}
+                                                onUpdate={updateVariante}
+                                                onDelete={supprimerVariante}
+                                                onToggleValeur={toggleValeur}
+                                                onAddCustomAttr={addCustomAttr}
+                                            />
+                                        ))}
+
+                                        <button
+                                            type="button"
+                                            onClick={ajouterVariante}
+                                            className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 p-4 text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground"
+                                        >
+                                            <PlusIcon className="h-4 w-4" />
+                                            Ajouter une variante ou Pack
+                                        </button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
 
                     {/* Submit */}
                     <Button disabled={processing} type="submit" className="w-full">
