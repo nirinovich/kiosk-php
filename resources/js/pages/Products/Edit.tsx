@@ -58,10 +58,12 @@ interface Props {
     categories: Categorie[];
     isSimpleProduct: boolean;
     currentStock: number;
+    availableVariantes: VarianteFormData[];
 }
 
-export default function Edit({ produit_modele, attributs, categories: initialCategories, isSimpleProduct, currentStock }: Props) {
+export default function Edit({ produit_modele, attributs, categories: initialCategories, isSimpleProduct, currentStock, availableVariantes }: Props) {
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
+    const [variantesDispo, setVariantesDispo] = useState<VarianteFormData[]>(availableVariantes || []);
     
     // Determine initial type based on DB data
     const isPackOnly = !isSimpleProduct && produit_modele.variantes?.length === 1 && produit_modele.variantes[0].est_pack;
@@ -345,11 +347,13 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                                 index={index}
                                                 variante={variante}
                                                 attributs={attributs}
+                                                availableVariantes={variantesDispo}
                                                 isPackMode={productType === 'pack'}
                                                 onUpdate={updateVariante}
                                                 onDelete={supprimerVariante}
                                                 onToggleValeur={toggleValeur}
                                                 onAddCustomAttr={addCustomAttr}
+                                                onIngredientCreated={(newIng: VarianteFormData) => setVariantesDispo(prev => [...prev, newIng])}
                                             />
                                         ))}
 

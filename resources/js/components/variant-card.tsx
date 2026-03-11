@@ -3,6 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Package, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import axios from 'axios';
 
 interface Valeur {
     id_valeur: number;
@@ -42,9 +44,12 @@ interface Props {
     onDelete: (index: number) => void;
     onToggleValeur: (indexVariante: number, idValeur: number) => void;
     onAddCustomAttr: (indexVariante: number, attribut: string, valeur: string) => void;
+    onIngredientCreated?: (newIng: VarianteFormData) => void;
 }
 
-export function VariantCard({ index, variante, attributs, availableVariantes = [], isPackMode = false, onUpdate, onDelete, onToggleValeur, onAddCustomAttr }: Props) {
+export function VariantCard({ index, variante, attributs, availableVariantes = [], isPackMode = false, onUpdate, onDelete, onToggleValeur, onAddCustomAttr, onIngredientCreated }: Props) {
+    const [newIngredientName, setNewIngredientName] = useState('');
+    const [isCreatingIngredient, setIsCreatingIngredient] = useState(false);
     const handleAddCustom = () => {
         const attrInput = document.getElementById(`attr-name-${index}`) as HTMLInputElement;
         const valInput = document.getElementById(`attr-val-${index}`) as HTMLInputElement;
@@ -80,22 +85,63 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
         onUpdate(index, 'composants', current);
     };
 
+    const handleCreateIngredient = async () => {
+        if (!newIngredientName.trim()) return;
+        setIsCreatingIngredient(true);
+        try {
+            const response = await axios.post('/products/quick-ingredient', { name: newIngredientName });
+            if (response.data && response.data.id_variante) {
+                const newIng = {
+                    id_variante: response.data.id_variante,
+                    sku: response.data.sku,
+                    surcout: 0,
+                    stock_reel: 0,
+                    valeurs_ids: [],
+                    valeurs_custom: []
+                };
+                
+                if (onIngredientCreated) {
+                    onIngredientCreated(newIng);
+                }
+                
+                // Automatically add to components, replacing an empty one if it exists
+                const current = variante.composants || [];
+                const emptyIndex = current.findIndex(c => !c.id_variante);
+                
+                if (emptyIndex !== -1) {
+                    updateComposant(emptyIndex, 'id_variante', response.data.id_variante);
+                } else {
+                    onUpdate(index, 'composants', [...current, { id_variante: response.data.id_variante, quantite: 1 }]);
+                }
+            }
+        } catch (error) {
+            console.error("Erreur création ingrédient :", error);
+            alert("Une erreur est survenue lors de la création de l'ingrédient.");
+        } finally {
+            setIsCreatingIngredient(false);
+            setNewIngredientName('');
+        }
+    };
+
     return (
-        <Card className="relative">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm">Variante #{index + 1}</CardTitle>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => onDelete(index)}
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <Card className={isPackMode ? "border-0 shadow-none bg-transparent" : "relative"}>
+            {!isPackMode && (
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm">Variante #{index + 1}</CardTitle>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => onDelete(index)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+            )}
+            <CardContent className={isPackMode ? "p-0 space-y-4" : "space-y-4"}>
                 {/* SKU, Surcoût, Stock row */}
+                {!isPackMode && (
                 <div className="grid grid-cols-3 gap-4">
                     <div>
                         <Label className="text-xs">Référence (SKU)</Label>
@@ -132,6 +178,7 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                     </div>
                     )}
                 </div>
+                )}
                 {/* 📦 ZONE PACK */}
                 {isPackMode || variante.est_pack ? (
                 <div className="rounded-lg border p-4 bg-primary/5 border-primary/20 space-y-4">
@@ -204,6 +251,28 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                             >
                                 <Plus className="h-3 w-3 mr-1" /> Ajouter un composant
                             </Button>
+
+                            <div className="mt-4 p-3 border border-dashed rounded-md bg-background/50">
+                                <Label className="text-xs text-muted-foreground mb-2 block">Le produit n'existe pas ? Créez-le rapidement :</Label>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        placeholder="Nom du nouvel ingrédient..." 
+                                        value={newIngredientName}
+                                        onChange={e => setNewIngredientName(e.target.value)}
+                                        className="h-8 text-sm"
+                                    />
+                                    <Button 
+                                        type="button" 
+                                        size="sm" 
+                                        variant="secondary" 
+                                        className="h-8 shrink-0"
+                                        disabled={isCreatingIngredient || !newIngredientName.trim()}
+                                        onClick={handleCreateIngredient}
+                                    >
+                                        {isCreatingIngredient ? 'Création...' : 'Créer et ajouter'}
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

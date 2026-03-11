@@ -46,13 +46,53 @@ class ProductController extends Controller
         ]);
     }
 
+    private function getAvailableVariantes() {
+        return ProduitVariante::with('modele:id_modele,name')
+            ->where('est_pack', false) 
+            ->get()
+            ->map(function ($v) {
+                $name = $v->modele ? $v->modele->name : 'Produit';
+                $sku = $v->reference_sku ? " - {$v->reference_sku}" : " (Simple)";
+                return [
+                    'id_variante' => $v->id_variante,
+                    'sku' => $name . $sku
+                ];
+            });
+    }
+
     public function create(){
         $attributs = Attribut::with('valeurs')->get();
         $categories = Categorie::all();
-        $availableVariantes = ProduitVariante::select('id_variante', 'reference_sku as sku')
-        ->where('est_pack', false) 
-        ->get();
+        $availableVariantes = $this->getAvailableVariantes();
         return Inertia::render('Products/Create', compact('attributs', 'categories', 'availableVariantes'));
+    }
+
+    public function quickCreateIngredient(Request $request) {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+        
+        DB::beginTransaction();
+        try {
+            $produit = ProduitModele::create([
+                'name' => $request->name,
+                'prix_standard' => 0,
+            ]);
+            
+            $variante = $produit->variantes()->create([
+                'stock_reel' => 0,
+                'est_pack' => false,
+            ]);
+            DB::commit();
+            
+            return response()->json([
+                'id_variante' => $variante->id_variante,
+                'sku' => $produit->name . ' (Simple)'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request){
@@ -160,6 +200,8 @@ class ProductController extends Controller
             ? (int) $produit_modele->variantes->first()->stock_reel
             : 0;
 
+        $availableVariantes = $this->getAvailableVariantes();
+
         return Inertia::render('Products/Edit', [
             'produit_modele' => $produit_modele,
             'attributs' => $attributs,
@@ -167,6 +209,7 @@ class ProductController extends Controller
             'categories' => $categories,
             'isSimpleProduct' => $isSimpleProduct,
             'currentStock' => $currentStock,
+            'availableVariantes' => $availableVariantes,
         ]);
     }
 

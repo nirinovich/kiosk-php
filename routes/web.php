@@ -48,6 +48,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+    Route::post('/products/quick-ingredient', [ProductController::class, 'quickCreateIngredient'])->name('products.quick_ingredient');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::get('/products/{produit_modele}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{produit_modele}', [ProductController::class, 'update'])->name('products.update');

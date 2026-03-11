@@ -63,6 +63,7 @@ export default function Create({ attributs, categories: initialCategories, avail
     const initialTypeParam = searchParams.get('type');
     
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
+    const [variantesDispo, setVariantesDispo] = useState<VarianteFormData[]>(availableVariantes || []);
     const [productType, setProductType] = useState<'simple' | 'variable' | 'pack'>(initialTypeParam === 'pack' ? 'pack' : 'simple');
 
     // Create a robust empty variant template
@@ -321,12 +322,13 @@ export default function Create({ attributs, categories: initialCategories, avail
                                                 index={index}
                                                 variante={variante}
                                                 attributs={attributs}
-                                                availableVariantes={availableVariantes}
+                                                availableVariantes={variantesDispo}
                                                 isPackMode={productType === 'pack'}
                                                 onUpdate={updateVariante}
                                                 onDelete={supprimerVariante}
                                                 onToggleValeur={toggleValeur}
                                                 onAddCustomAttr={addCustomAttr}
+                                                onIngredientCreated={(newIng: VarianteFormData) => setVariantesDispo(prev => [...prev, newIng])}
                                             />
                                         ))}
 
