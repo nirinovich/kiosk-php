@@ -188,13 +188,14 @@ class ProductController extends Controller
 
     public function edit($id)
     {
-        $produit_modele = ProduitModele::with(['variantes.valeurs'])->findOrFail($id);
+        $produit_modele = ProduitModele::with(['variantes.valeurs', 'variantes.composants'])->findOrFail($id);
         $attributs = Attribut::with('valeurs')->get();
         $categories = Categorie::all();
 
-        // Detect if product is "simple" (1 variant with no attribute values)
+        // Detect if product is "simple" (1 variant with no attribute values, not a pack)
         $isSimpleProduct = $produit_modele->variantes->count() === 1
-            && $produit_modele->variantes->first()->valeurs->isEmpty();
+            && $produit_modele->variantes->first()->valeurs->isEmpty()
+            && !$produit_modele->variantes->first()->est_pack;
 
         $currentStock = $isSimpleProduct
             ? (int) $produit_modele->variantes->first()->stock_reel
@@ -232,6 +233,10 @@ class ProductController extends Controller
             'variantes.*.stock_reel' => 'nullable|integer|min:0',
             'variantes.*.valeurs_ids' => 'nullable|array',
             'variantes.*.valeurs_custom' => 'nullable|array',
+            'variantes.*.est_pack' => 'nullable|boolean',
+            'variantes.*.composants' => 'nullable|array',
+            'variantes.*.composants.*.id_variante' => 'required_with:variantes.*.composants|integer|exists:produit_variantes,id_variante',
+            'variantes.*.composants.*.quantite' => 'required_with:variantes.*.composants|numeric|gt:0',
         ]);
 
         DB::transaction(function () use ($request, $produit_modele) {
@@ -286,13 +291,16 @@ class ProductController extends Controller
                         'reference_sku' => null,
                         'surcout_prix' => 0,
                         'stock_reel' => $stock,
+                        'est_pack' => false,
                     ]);
                     $defaultVariant->valeurs()->detach();
+                    $defaultVariant->composants()->detach();
                 } else {
                     $produit_modele->variantes()->create([
                         'reference_sku' => null,
                         'surcout_prix' => 0,
                         'stock_reel' => $stock,
+                        'est_pack' => false,
                     ]);
                 }
             } else {
@@ -306,20 +314,24 @@ class ProductController extends Controller
                 $produit_modele->variantes()->whereNotIn('id_variante', $idsVariantesAGarder)->delete();
 
                 foreach ($variantesRecues as $varianteData) {
+                    $estPack = !empty($varianteData['est_pack']) && $varianteData['est_pack'] == true;
+
                     if (!empty($varianteData['id_variante'])) {
                         $variante = $produit_modele->variantes()->find($varianteData['id_variante']);
                         if ($variante) {
                             $variante->update([
                                 'reference_sku' => $varianteData['sku'] ?? null,
                                 'surcout_prix' => $varianteData['surcout'] ?? 0,
-                                'stock_reel' => $varianteData['stock_reel'] ?? $variante->stock_reel,
+                                'stock_reel' => $estPack ? 0 : ($varianteData['stock_reel'] ?? $variante->stock_reel),
+                                'est_pack' => $estPack,
                             ]);
                         }
                     } else {
                         $variante = $produit_modele->variantes()->create([
                             'reference_sku' => $varianteData['sku'] ?? null,
                             'surcout_prix' => $varianteData['surcout'] ?? 0,
-                            'stock_reel' => $varianteData['stock_reel'] ?? 0,
+                            'stock_reel' => $estPack ? 0 : ($varianteData['stock_reel'] ?? 0),
+                            'est_pack' => $estPack,
                         ]);
                     }
 
@@ -339,6 +351,21 @@ class ProductController extends Controller
                         }
 
                         $variante->valeurs()->sync($idsAAjouter);
+
+                        // Attach pack components
+                        if ($estPack && !empty($varianteData['composants'])) {
+                            $composantsSync = [];
+                            foreach ($varianteData['composants'] as $composant) {
+                                if (!empty($composant['id_variante'])) {
+                                    $composantsSync[$composant['id_variante']] = [
+                                        'quantite' => $composant['quantite'] ?? 1
+                                    ];
+                                }
+                            }
+                            $variante->composants()->sync($composantsSync);
+                        } else {
+                            $variante->composants()->sync([]);
+                        }
                     }
                 }
             }

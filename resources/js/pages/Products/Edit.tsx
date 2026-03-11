@@ -203,34 +203,29 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                 <FormErrors errors={errors} />
 
                 <form onSubmit={handleUpdate} className="space-y-6">
-                    {/* ── Type selector (Visual upgrade) ── */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div 
-                            onClick={() => handleProductTypeChange('simple')}
-                            className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'simple' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
-                        >
-                            <Package className={`h-8 w-8 mb-2 ${productType === 'simple' ? 'text-primary' : 'text-muted-foreground'}`} />
-                            <h3 className={`font-semibold ${productType === 'simple' ? 'text-foreground' : ''}`}>Produit Simple</h3>
-                            <p className="text-xs mt-1">Un produit classique avec un stock unique.</p>
-                        </div>
-
-                        <div 
-                            onClick={() => handleProductTypeChange('variable')}
-                            className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'variable' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
-                        >
-                            <Tags className={`h-8 w-8 mb-2 ${productType === 'variable' ? 'text-primary' : 'text-muted-foreground'}`} />
-                            <h3 className={`font-semibold ${productType === 'variable' ? 'text-foreground' : ''}`}>Avec Déclinaisons</h3>
-                            <p className="text-xs mt-1">Gérez différentes tailles, couleurs ou options.</p>
-                        </div>
-
-                        <div 
-                            onClick={() => handleProductTypeChange('pack')}
-                            className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'pack' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
-                        >
-                            <PackagePlus className={`h-8 w-8 mb-2 ${productType === 'pack' ? 'text-primary' : 'text-muted-foreground'}`} />
-                            <h3 className={`font-semibold ${productType === 'pack' ? 'text-foreground' : ''}`}>Pack / Recette</h3>
-                            <p className="text-xs mt-1">Un ensemble (ex: menu) composé d'autres produits.</p>
-                        </div>
+                    {/* ── Type Display (Locked during edit) ── */}
+                    <div className="mb-6 w-full">
+                        {productType === 'simple' && (
+                            <div className="rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center border-primary bg-primary/5 shadow-sm">
+                                <Package className="h-8 w-8 mb-2 text-primary" />
+                                <h3 className="font-semibold text-foreground">Produit Simple</h3>
+                                <p className="text-xs mt-1">Un produit classique avec un stock unique.</p>
+                            </div>
+                        )}
+                        {productType === 'variable' && (
+                            <div className="rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center border-primary bg-primary/5 shadow-sm">
+                                <Tags className="h-8 w-8 mb-2 text-primary" />
+                                <h3 className="font-semibold text-foreground">Avec Déclinaisons</h3>
+                                <p className="text-xs mt-1">Différentes tailles, couleurs ou options.</p>
+                            </div>
+                        )}
+                        {productType === 'pack' && (
+                            <div className="rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center border-primary bg-primary/5 shadow-sm">
+                                <PackagePlus className="h-8 w-8 mb-2 text-primary" />
+                                <h3 className="font-semibold text-foreground">Pack / Recette</h3>
+                                <p className="text-xs mt-1">Un ensemble composé d'autres produits.</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid gap-6 lg:grid-cols-2">

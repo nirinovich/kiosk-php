@@ -37,6 +37,7 @@ interface ProduitModele {
     categorie: Categorie | null;
     variantes_count: number;
     variantes_sum_stock_reel: number | null;
+    variantes?: Array<{ est_pack: boolean }>;
 }
 
 interface PageProps {
@@ -89,19 +90,19 @@ export default function Index() {
 
                     <div className="flex items-center gap-2">
                         <Link href={categories.index().url}>
-                            <Button variant="outline" className="hidden sm:flex">
+                            <Button variant="outline" className="hidden sm:flex h-10">
                                 <Tag className="h-4 w-4 mr-2" />
                                 Catégories
                             </Button>
                         </Link>
                         <Link href={`${products.create().url}?type=pack`}>
-                            <Button variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary border-primary/20 border">
+                            <Button variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary border-primary/20 border h-10">
                                 <PackagePlus className="h-4 w-4 mr-2" />
                                 Créer un pack
                             </Button>
                         </Link>
                         <Link href={products.create().url}>
-                            <Button>
+                            <Button className="h-10">
                                 <PlusIcon className="h-4 w-4 mr-2" />
                                 Nouveau produit
                             </Button>
@@ -129,7 +130,7 @@ export default function Index() {
                                     <TableHead>Catégorie</TableHead>
                                     <TableHead className="text-right">Prix</TableHead>
                                     <TableHead className="text-center">Stock</TableHead>
-                                    <TableHead className="text-center">Variantes</TableHead>
+                                    <TableHead className="text-center">Type</TableHead>
                                     <TableHead className="text-center">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -150,11 +151,18 @@ export default function Index() {
                                         <TableCell className="text-right tabular-nums">{formatMoney(p.prix_standard)}</TableCell>
                                         <TableCell className="text-center">{stockBadge(p.variantes_sum_stock_reel)}</TableCell>
                                         <TableCell className="text-center">
-                                            {p.variantes_count <= 1 ? (
-                                                <span className="text-xs text-muted-foreground">Simple</span>
-                                            ) : (
-                                                <Badge variant="secondary">{p.variantes_count}</Badge>
-                                            )}
+                                            {(() => {
+                                                const isPack = p.variantes?.some(v => v.est_pack);
+                                                const isVariable = p.variantes_count > 1;
+                                                
+                                                if (isPack) {
+                                                    return <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">Pack</Badge>;
+                                                }
+                                                if (isVariable) {
+                                                    return <Badge variant="secondary">Variable</Badge>;
+                                                }
+                                                return <span className="text-xs text-muted-foreground">Simple</span>;
+                                            })()}
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <div className="flex items-center justify-center gap-1">
