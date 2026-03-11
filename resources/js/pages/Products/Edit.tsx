@@ -6,10 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusIcon, Package, Layers } from 'lucide-react';
+import { PlusIcon, Package, Layers, PackagePlus, Tags } from 'lucide-react';
 import products from '@/routes/products';
 import { dashboard } from '@/routes';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CategoryCombobox } from '@/components/category-combobox';
 import { VariantCard, type VarianteFormData } from '@/components/variant-card';
 import { FormErrors } from '@/components/form-errors';
@@ -38,6 +38,8 @@ interface VarianteDepuisBDD {
     surcout_prix: number;
     stock_reel: number;
     valeurs: Valeur[];
+    est_pack?: boolean;
+    composants?: any[];
 }
 
 interface ProduitModele {
@@ -60,7 +62,12 @@ interface Props {
 
 export default function Edit({ produit_modele, attributs, categories: initialCategories, isSimpleProduct, currentStock }: Props) {
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
-    const [hasVariants, setHasVariants] = useState(!isSimpleProduct);
+    
+    // Determine initial type based on DB data
+    const isPackOnly = !isSimpleProduct && produit_modele.variantes?.length === 1 && produit_modele.variantes[0].est_pack;
+    const initialProductType = isSimpleProduct ? 'simple' : (isPackOnly ? 'pack' : 'variable');
+    
+    const [productType, setProductType] = useState<'simple' | 'variable' | 'pack'>(initialProductType);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: dashboard().url },
@@ -70,13 +77,15 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
 
     const initialVariantes: VarianteFormData[] = isSimpleProduct
         ? []
-        : produit_modele.variantes?.map((v) => ({
+        : produit_modele.variantes?.map((v: any) => ({
               id_variante: v.id_variante,
               sku: v.reference_sku || '',
               surcout: Number(v.surcout_prix) || 0,
               stock_reel: Number(v.stock_reel) || 0,
-              valeurs_ids: v.valeurs.map((val) => val.id_valeur),
+              valeurs_ids: v.valeurs.map((val: any) => val.id_valeur),
               valeurs_custom: [],
+              est_pack: v.est_pack,
+              composants: v.composants || []
           })) ?? [];
 
     const { data, setData, post, processing, errors } = useForm({
@@ -92,22 +101,35 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
         variantes: initialVariantes,
     });
 
-    const toggleVariantMode = () => {
-        if (hasVariants) {
-            setData((prev) => ({
-                ...prev,
-                is_simple: true,
-                variantes: [],
-                stock_initial: 0,
-            }));
-            setHasVariants(false);
-        } else {
+    const emptyPack: VarianteFormData = {
+        sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [], est_pack: true, composants: [{ id_variante: '', quantite: 1 }, { id_variante: '', quantite: 1 }]
+    };
+
+    const handleProductTypeChange = (type: 'simple' | 'variable' | 'pack') => {
+        setProductType(type);
+        if (type === 'simple') {
+            setData((prev) => ({ ...prev, is_simple: true, variantes: [], stock_initial: currentStock || 0 }));
+        } else if (type === 'variable') {
             setData((prev) => ({
                 ...prev,
                 is_simple: false,
-                variantes: [{ sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [] }],
+                variantes: prev.variantes.length > 0 && !prev.variantes[0].est_pack 
+                    ? prev.variantes 
+                    : [{ sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [] }]
             }));
-            setHasVariants(true);
+        } else if (type === 'pack') {
+            setData((prev) => {
+                const variants = [...prev.variantes];
+                if (variants.length === 0) {
+                    return { ...prev, is_simple: false, variantes: [{...emptyPack}] };
+                } else {
+                    variants[0] = { ...variants[0], est_pack: true };
+                    if (!variants[0].composants || variants[0].composants.length < 2) {
+                        variants[0].composants = [{ id_variante: '', quantite: 1 }, { id_variante: '', quantite: 1 }];
+                    }
+                    return { ...prev, is_simple: false, variantes: variants };
+                }
+            });
         }
     };
 
@@ -121,7 +143,7 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
     const supprimerVariante = (index: number) => {
         const updated = data.variantes.filter((_, i) => i !== index);
         if (updated.length === 0) {
-            setHasVariants(false);
+            setProductType('simple');
             setData((prev) => ({ ...prev, is_simple: true, variantes: [], stock_initial: 0 }));
             return;
         }
@@ -151,6 +173,22 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
 
     const handleUpdate = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Add validation for pack mode
+        if (productType === 'pack') {
+            const variant = data.variantes[0];
+            if (!variant.composants || variant.composants.length < 2) {
+                alert("Un pack doit contenir au moins 2 ingrédients.");
+                return;
+            }
+            // Check that they actually selected items
+            const hasEmpty = variant.composants.some(c => !c.id_variante);
+            if (hasEmpty) {
+                alert("Veuillez sélectionner un produit valide pour chaque composant du pack.");
+                return;
+            }
+        }
+
         post(products.update(produit_modele.id_modele).url, {
             forceFormData: true,
         });
@@ -163,6 +201,36 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                 <FormErrors errors={errors} />
 
                 <form onSubmit={handleUpdate} className="space-y-6">
+                    {/* ── Type selector (Visual upgrade) ── */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div 
+                            onClick={() => handleProductTypeChange('simple')}
+                            className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'simple' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
+                        >
+                            <Package className={`h-8 w-8 mb-2 ${productType === 'simple' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <h3 className={`font-semibold ${productType === 'simple' ? 'text-foreground' : ''}`}>Produit Simple</h3>
+                            <p className="text-xs mt-1">Un produit classique avec un stock unique.</p>
+                        </div>
+
+                        <div 
+                            onClick={() => handleProductTypeChange('variable')}
+                            className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'variable' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
+                        >
+                            <Tags className={`h-8 w-8 mb-2 ${productType === 'variable' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <h3 className={`font-semibold ${productType === 'variable' ? 'text-foreground' : ''}`}>Avec Déclinaisons</h3>
+                            <p className="text-xs mt-1">Gérez différentes tailles, couleurs ou options.</p>
+                        </div>
+
+                        <div 
+                            onClick={() => handleProductTypeChange('pack')}
+                            className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'pack' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
+                        >
+                            <PackagePlus className={`h-8 w-8 mb-2 ${productType === 'pack' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <h3 className={`font-semibold ${productType === 'pack' ? 'text-foreground' : ''}`}>Pack / Recette</h3>
+                            <p className="text-xs mt-1">Un ensemble (ex: menu) composé d'autres produits.</p>
+                        </div>
+                    </div>
+
                     <div className="grid gap-6 lg:grid-cols-2">
                         {/* ── Section 1: Product Info ── */}
                         <Card>
@@ -241,31 +309,19 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Layers className="h-5 w-5" />
-                                    Stock & Déclinaisons
+                                    {productType === 'simple' ? <Package className="h-5 w-5" /> : productType === 'pack' ? <PackagePlus className="h-5 w-5" /> : <Layers className="h-5 w-5" />}
+                                    {productType === 'simple' ? 'Gestion du stock initial' : productType === 'pack' ? 'Composition du pack' : 'Stock & Déclinaisons'}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {/* Mode toggle */}
-                                <div className="flex items-center justify-between rounded-lg border p-4">
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            {hasVariants ? 'Produit avec déclinaisons' : 'Produit simple'}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {hasVariants
-                                                ? 'Chaque variante a son propre stock (tailles, couleurs...)'
-                                                : 'Un seul article avec un stock global'}
-                                        </p>
-                                    </div>
-                                    <Button type="button" variant="outline" size="sm" onClick={toggleVariantMode}>
-                                        {hasVariants ? 'Passer en simple' : 'Ajouter des déclinaisons'}
-                                    </Button>
-                                </div>
 
                                 {/* Simple mode */}
-                                {!hasVariants && (
-                                    <div>
+                                {productType === 'simple' && (
+                                    <div className="rounded-lg bg-muted/30 p-4 border border-border/50">
+                                        <div className="mb-4">
+                                            <p className="text-sm font-medium">Stock actuel</p>
+                                            <p className="text-xs text-muted-foreground">Modifier la réserve enregistrée.</p>
+                                        </div>
                                         <Label htmlFor="stock_initial">Stock actuel</Label>
                                         <Input
                                             id="stock_initial"
@@ -275,20 +331,21 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                             placeholder="0"
                                             value={data.stock_initial}
                                             onChange={(e) => setData('stock_initial', Number(e.target.value))}
-                                            className="mt-1 max-w-xs"
+                                            className="mt-1 max-w-xs bg-background"
                                         />
                                     </div>
                                 )}
 
                                 {/* Variant mode */}
-                                {hasVariants && (
+                                {productType !== 'simple' && (
                                     <div className="space-y-4">
                                         {data.variantes.map((variante, index) => (
                                             <VariantCard
-                                                key={variante.id_variante ?? `new-${index}`}
+                                                key={index}
                                                 index={index}
                                                 variante={variante}
                                                 attributs={attributs}
+                                                isPackMode={productType === 'pack'}
                                                 onUpdate={updateVariante}
                                                 onDelete={supprimerVariante}
                                                 onToggleValeur={toggleValeur}
@@ -296,14 +353,16 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                             />
                                         ))}
 
-                                        <button
-                                            type="button"
-                                            onClick={ajouterVariante}
-                                            className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 p-4 text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground"
-                                        >
-                                            <PlusIcon className="h-4 w-4" />
-                                            Ajouter une variante
-                                        </button>
+                                        {productType === 'variable' && (
+                                            <button
+                                                type="button"
+                                                onClick={ajouterVariante}
+                                                className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 p-4 text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground"
+                                            >
+                                                <PlusIcon className="h-4 w-4" />
+                                                Ajouter une variante
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </CardContent>

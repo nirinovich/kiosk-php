@@ -37,13 +37,14 @@ interface Props {
     variante: VarianteFormData;
     attributs: Attribut[];
     availableVariantes?: VarianteFormData[];
+    isPackMode?: boolean;
     onUpdate: (index: number, field: keyof VarianteFormData, value: any) => void;
     onDelete: (index: number) => void;
     onToggleValeur: (indexVariante: number, idValeur: number) => void;
     onAddCustomAttr: (indexVariante: number, attribut: string, valeur: string) => void;
 }
 
-export function VariantCard({ index, variante, attributs, availableVariantes = [], onUpdate, onDelete, onToggleValeur, onAddCustomAttr }: Props) {
+export function VariantCard({ index, variante, attributs, availableVariantes = [], isPackMode = false, onUpdate, onDelete, onToggleValeur, onAddCustomAttr }: Props) {
     const handleAddCustom = () => {
         const attrInput = document.getElementById(`attr-name-${index}`) as HTMLInputElement;
         const valInput = document.getElementById(`attr-val-${index}`) as HTMLInputElement;
@@ -132,22 +133,25 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                     )}
                 </div>
                 {/* 📦 ZONE PACK */}
+                {isPackMode || variante.est_pack ? (
                 <div className="rounded-lg border p-4 bg-primary/5 border-primary/20 space-y-4">
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            id={`pack-${index}`}
-                            checked={variante.est_pack || false}
-                            onChange={(e) => handleTogglePack(e.target.checked)}
-                            className="h-4 w-4 rounded border-primary/50 text-primary focus:ring-primary"
-                        />
-                        <Label htmlFor={`pack-${index}`} className="flex items-center gap-2 cursor-pointer text-sm font-medium">
-                            <Package className="h-4 w-4 text-primary" />
-                            Cette déclinaison est un Pack (composé d'autres produits)
-                        </Label>
-                    </div>
+                    {!isPackMode && (
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id={`pack-${index}`}
+                                checked={variante.est_pack || false}
+                                onChange={(e) => handleTogglePack(e.target.checked)}
+                                className="h-4 w-4 rounded border-primary/50 text-primary focus:ring-primary"
+                            />
+                            <Label htmlFor={`pack-${index}`} className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                                <Package className="h-4 w-4 text-primary" />
+                                Cette déclinaison est un Pack (composé d'autres produits)
+                            </Label>
+                        </div>
+                    )}
 
-                    {variante.est_pack && (
+                    {(isPackMode || variante.est_pack) && (
                         <div className="space-y-3 pl-6 border-l-2 border-primary/30">
                             <Label className="text-xs text-muted-foreground">Contenu du pack</Label>
                             
@@ -203,9 +207,10 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                         </div>
                     )}
                 </div>
+                ) : null}
 
-                {/* Existing attributes */}
-                {attributs.length > 0 && (
+                {/* Existing attributes (Hiden in strict pack mode) */}
+                {!isPackMode && attributs.length > 0 && (
                     <div>
                         <Label className="text-xs text-muted-foreground mb-2 block">Attributs</Label>
                         <div className="flex flex-wrap gap-6 rounded-md border p-3 bg-muted/30">
@@ -231,7 +236,8 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                     </div>
                 )}
 
-                {/* Custom attribute creation */}
+                {/* Custom attribute creation  (Hidden in strict pack mode) */}
+                {!isPackMode && (
                 <div className="rounded-md border border-dashed p-3 space-y-2">
                     <Label className="text-xs text-muted-foreground">Attribut manquant ? Créez-le ici :</Label>
                     <div className="flex gap-2 items-end">
@@ -258,6 +264,7 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                         </div>
                     )}
                 </div>
+                )}
             </CardContent>
         </Card>
     );

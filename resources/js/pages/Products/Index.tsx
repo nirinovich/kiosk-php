@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { InfoIcon, PlusIcon, SearchIcon, PackageOpen, Pencil, Trash2, Tag } from 'lucide-react';
+import { InfoIcon, PlusIcon, SearchIcon, PackageOpen, Pencil, Trash2, Tag, Layers, PackagePlus } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -87,18 +87,26 @@ export default function Index() {
                         />
                     </div>
 
-                    <Link href={products.create()}>
-                        <Button>
-                            <PlusIcon className="h-4 w-4 mr-2" />
-                            Nouveau produit
-                        </Button>
-                    </Link>
-                    <Link href={categories.index().url}>
-                        <Button variant="outline">
-                            <Tag className="h-4 w-4 mr-2" />
-                            Catégories
-                        </Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        <Link href={categories.index().url}>
+                            <Button variant="outline" className="hidden sm:flex">
+                                <Tag className="h-4 w-4 mr-2" />
+                                Catégories
+                            </Button>
+                        </Link>
+                        <Link href={`${products.create().url}?type=pack`}>
+                            <Button variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary border-primary/20 border">
+                                <PackagePlus className="h-4 w-4 mr-2" />
+                                Créer un pack
+                            </Button>
+                        </Link>
+                        <Link href={products.create().url}>
+                            <Button>
+                                <PlusIcon className="h-4 w-4 mr-2" />
+                                Nouveau produit
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Flash message */}

@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusIcon, Package, Layers } from 'lucide-react';
-import { useState } from 'react';
+import { PlusIcon, Package, Layers, PackagePlus, Tags } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { CategoryCombobox } from '@/components/category-combobox';
 import { VariantCard, type VarianteFormData } from '@/components/variant-card';
 import { FormErrors } from '@/components/form-errors';
@@ -38,15 +38,10 @@ interface Attribut {
     valeurs: Valeur[];
 }
 
-interface DisponibleVariante {
-    id_variante: number;
-    sku: string;
-}
-
 interface Props {
     attributs: Attribut[];
     categories: Categorie[];
-    availableVariantes: DisponibleVariante[];
+    availableVariantes: VarianteFormData[];
 }
 
 interface FormState {
@@ -63,19 +58,14 @@ export default function Create({ attributs, categories: initialCategories, avail
 
     console.log("Ce que Laravel envoie :", availableVariantes);
     
+    // Support initial type from URL
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    const initialTypeParam = searchParams.get('type');
+    
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
-    const [hasVariants, setHasVariants] = useState(false);
+    const [productType, setProductType] = useState<'simple' | 'variable' | 'pack'>(initialTypeParam === 'pack' ? 'pack' : 'simple');
 
-    const { data, setData, post, processing, errors } = useForm<FormState>({
-        name: '',
-        prix_standard: '',
-        description: '',
-        stock_initial: 0,
-        image_url: null,
-        id_categorie: '',
-        variantes: [],
-    });
-
+    // Create a robust empty variant template
     const emptyVariant: VarianteFormData = { 
         sku: '', 
         surcout: 0, 
@@ -86,15 +76,46 @@ export default function Create({ attributs, categories: initialCategories, avail
         composants: []
     };
 
-    const toggleVariantMode = () => {
-        if (hasVariants) {
-            // Switching back to simple — clear variants
+    const emptyPack: VarianteFormData = {
+        ...emptyVariant,
+        est_pack: true,
+        composants: [{ id_variante: '', quantite: 1 }, { id_variante: '', quantite: 1 }]
+    };
+
+    const { data, setData, post, processing, errors } = useForm<FormState>({
+        name: '',
+        prix_standard: '',
+        description: '',
+        stock_initial: 0,
+        image_url: null,
+        id_categorie: '',
+        // Initialize based on URL param
+        variantes: initialTypeParam === 'pack' ? [emptyPack] : [],
+    });
+
+    // Remove duplicated emptyVariant
+
+    const handleProductTypeChange = (type: 'simple' | 'variable' | 'pack') => {
+        setProductType(type);
+        if (type === 'simple') {
             setData('variantes', []);
-            setHasVariants(false);
-        } else {
-            // Switching to variant mode — add one empty variant
-            setData('variantes', [emptyVariant]);
-            setHasVariants(true);
+        } else if (type === 'variable') {
+            // If we already have variants (and not just a pack), keep them. Otherwise set one empty variant
+            if (data.variantes.length === 0 || data.variantes[0].est_pack) {
+                setData('variantes', [{...emptyVariant}]);
+            }
+        } else if (type === 'pack') {
+            // Force the first variant to be a pack
+            if (data.variantes.length === 0) {
+                setData('variantes', [{...emptyPack}]);
+            } else {
+                const updated = [...data.variantes];
+                updated[0] = { ...updated[0], est_pack: true };
+                if (!updated[0].composants || updated[0].composants.length < 2) {
+                    updated[0].composants = [{ id_variante: '', quantite: 1 }, { id_variante: '', quantite: 1 }];
+                }
+                setData('variantes', updated);
+            }
         }
     };
 
@@ -108,7 +129,7 @@ export default function Create({ attributs, categories: initialCategories, avail
     const supprimerVariante = (index: number) => {
         const updated = data.variantes.filter((_, i) => i !== index);
         if (updated.length === 0) {
-            setHasVariants(false);
+            setProductType('simple');
         }
         setData('variantes', updated);
     };
@@ -136,6 +157,22 @@ export default function Create({ attributs, categories: initialCategories, avail
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Add validation for pack mode
+        if (productType === 'pack') {
+            const variant = data.variantes[0];
+            if (!variant.composants || variant.composants.length < 2) {
+                alert("Un pack doit contenir au moins 2 ingrédients.");
+                return;
+            }
+            // Check that they actually selected items
+            const hasEmpty = variant.composants.some(c => !c.id_variante);
+            if (hasEmpty) {
+                alert("Veuillez sélectionner un produit valide pour chaque composant du pack.");
+                return;
+            }
+        }
+
         post(products.store().url);
     };
 
@@ -146,6 +183,36 @@ export default function Create({ attributs, categories: initialCategories, avail
                 <FormErrors errors={errors} />
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* ── Type selector (Visual upgrade) ── */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div 
+                            onClick={() => handleProductTypeChange('simple')}
+                            className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'simple' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
+                        >
+                            <Package className={`h-8 w-8 mb-2 ${productType === 'simple' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <h3 className={`font-semibold ${productType === 'simple' ? 'text-foreground' : ''}`}>Produit Simple</h3>
+                            <p className="text-xs mt-1">Un produit classique avec un stock unique.</p>
+                        </div>
+
+                        <div 
+                            onClick={() => handleProductTypeChange('variable')}
+                            className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'variable' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
+                        >
+                            <Tags className={`h-8 w-8 mb-2 ${productType === 'variable' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <h3 className={`font-semibold ${productType === 'variable' ? 'text-foreground' : ''}`}>Avec Déclinaisons</h3>
+                            <p className="text-xs mt-1">Gérez différentes tailles, couleurs ou options.</p>
+                        </div>
+
+                        <div 
+                            onClick={() => handleProductTypeChange('pack')}
+                            className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'pack' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
+                        >
+                            <PackagePlus className={`h-8 w-8 mb-2 ${productType === 'pack' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <h3 className={`font-semibold ${productType === 'pack' ? 'text-foreground' : ''}`}>Pack / Recette</h3>
+                            <p className="text-xs mt-1">Un ensemble (ex: menu) composé d'autres produits.</p>
+                        </div>
+                    </div>
+
                     <div className="grid gap-6 lg:grid-cols-2">
                         {/* ── Section 1: Product Info ── */}
                         <Card>
@@ -218,32 +285,20 @@ export default function Create({ attributs, categories: initialCategories, avail
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Layers className="h-5 w-5" />
-                                    Stock & Déclinaisons ou Packs
+                                    {productType === 'simple' ? <Package className="h-5 w-5" /> : productType === 'pack' ? <PackagePlus className="h-5 w-5" /> : <Layers className="h-5 w-5" />}
+                                    {productType === 'simple' ? 'Gestion du stock initial' : productType === 'pack' ? 'Composition du pack' : 'Stock & Déclinaisons'}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {/* Mode toggle */}
-                                <div className="flex items-center justify-between rounded-lg border p-4">
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            {hasVariants ? 'Produit avec déclinaisons / Packs' : 'Produit simple'}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {hasVariants
-                                                ? 'Chaque variante a son propre stock (tailles, couleurs...)'
-                                                : 'Un seul article avec un stock global'}
-                                        </p>
-                                    </div>
-                                    <Button type="button" variant="outline" size="sm" onClick={toggleVariantMode}>
-                                        {hasVariants ? 'Passer en simple' : 'Ajouter des déclinaisons'}
-                                    </Button>
-                                </div>
 
                                 {/* Simple mode: single stock input */}
-                                {!hasVariants && (
-                                    <div>
-                                        <Label htmlFor="stock_initial">Stock initial</Label>
+                                {productType === 'simple' && (
+                                    <div className="rounded-lg bg-muted/30 p-4 border border-border/50">
+                                        <div className="mb-4">
+                                            <p className="text-sm font-medium">Stock unique</p>
+                                            <p className="text-xs text-muted-foreground">Définissez le nombre d'articles que vous avez actuellement en réserve.</p>
+                                        </div>
+                                        <Label htmlFor="stock_initial">Quantité en stock</Label>
                                         <Input
                                             id="stock_initial"
                                             type="number"
@@ -252,13 +307,13 @@ export default function Create({ attributs, categories: initialCategories, avail
                                             placeholder="0"
                                             value={data.stock_initial}
                                             onChange={(e) => setData('stock_initial', Number(e.target.value))}
-                                            className="mt-1 max-w-xs"
+                                            className="mt-1 max-w-xs bg-background"
                                         />
                                     </div>
                                 )}
 
-                                {/* Variant mode: variant cards */}
-                                {hasVariants && (
+                                {/* Variant mode or Pack mode: variant cards */}
+                                {productType !== 'simple' && (
                                     <div className="space-y-4">
                                         {data.variantes.map((variante, index) => (
                                             <VariantCard
@@ -267,6 +322,7 @@ export default function Create({ attributs, categories: initialCategories, avail
                                                 variante={variante}
                                                 attributs={attributs}
                                                 availableVariantes={availableVariantes}
+                                                isPackMode={productType === 'pack'}
                                                 onUpdate={updateVariante}
                                                 onDelete={supprimerVariante}
                                                 onToggleValeur={toggleValeur}
@@ -274,14 +330,16 @@ export default function Create({ attributs, categories: initialCategories, avail
                                             />
                                         ))}
 
-                                        <button
-                                            type="button"
-                                            onClick={ajouterVariante}
-                                            className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 p-4 text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground"
-                                        >
-                                            <PlusIcon className="h-4 w-4" />
-                                            Ajouter une variante ou Pack
-                                        </button>
+                                        {productType === 'variable' && (
+                                            <button
+                                                type="button"
+                                                onClick={ajouterVariante}
+                                                className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 p-4 text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground"
+                                            >
+                                                <PlusIcon className="h-4 w-4" />
+                                                Ajouter une variante ou Pack
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </CardContent>
