@@ -18,6 +18,21 @@ interface Attribut {
     valeurs: Valeur[];
 }
 
+export interface Categorie {
+    id_categorie: number;
+    nom: string;
+}
+
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+
 export interface ComposantFormData {
     id_variante: number | string;
     quantite: number | string;
@@ -39,6 +54,7 @@ interface Props {
     variante: VarianteFormData;
     attributs: Attribut[];
     availableVariantes?: VarianteFormData[];
+    categories?: Categorie[];
     isPackMode?: boolean;
     onUpdate: (index: number, field: keyof VarianteFormData, value: any) => void;
     onDelete: (index: number) => void;
@@ -47,8 +63,12 @@ interface Props {
     onIngredientCreated?: (newIng: VarianteFormData) => void;
 }
 
-export function VariantCard({ index, variante, attributs, availableVariantes = [], isPackMode = false, onUpdate, onDelete, onToggleValeur, onAddCustomAttr, onIngredientCreated }: Props) {
+export function VariantCard({ index, variante, attributs, availableVariantes = [], categories = [], isPackMode = false, onUpdate, onDelete, onToggleValeur, onAddCustomAttr, onIngredientCreated }: Props) {
+    const [dialogOpen, setDialogOpen] = useState(false);
     const [newIngredientName, setNewIngredientName] = useState('');
+    const [newIngredientPrice, setNewIngredientPrice] = useState('0');
+    const [newIngredientStock, setNewIngredientStock] = useState('0');
+    const [newIngredientCategory, setNewIngredientCategory] = useState<string>('');
     const [isCreatingIngredient, setIsCreatingIngredient] = useState(false);
     const handleAddCustom = () => {
         const attrInput = document.getElementById(`attr-name-${index}`) as HTMLInputElement;
@@ -89,8 +109,14 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
         if (!newIngredientName.trim()) return;
         setIsCreatingIngredient(true);
         try {
-            const response = await axios.post('/products/quick-ingredient', { name: newIngredientName });
-            if (response.data && response.data.id_variante) {
+            const response = await axios.post('/products/quick-ingredient', {
+                name: newIngredientName,
+                prix_standard: Number(newIngredientPrice),
+                stock_reel: Number(newIngredientStock),
+                id_categorie: newIngredientCategory ? Number(newIngredientCategory) : null
+            });
+            
+            if (response.data?.id_variante) {
                 const newIng = {
                     id_variante: response.data.id_variante,
                     sku: response.data.sku,
@@ -120,6 +146,10 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
         } finally {
             setIsCreatingIngredient(false);
             setNewIngredientName('');
+            setNewIngredientPrice('0');
+            setNewIngredientStock('0');
+            setNewIngredientCategory('');
+            setDialogOpen(false);
         }
     };
 
@@ -252,27 +282,90 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                                 <Plus className="h-3 w-3 mr-1" /> Ajouter un composant
                             </Button>
 
-                            <div className="mt-4 p-3 border border-dashed rounded-md bg-background/50">
-                                <Label className="text-xs text-muted-foreground mb-2 block">Le produit n'existe pas ? Créez-le rapidement :</Label>
-                                <div className="flex gap-2">
-                                    <Input 
-                                        placeholder="Nom du nouvel ingrédient..." 
-                                        value={newIngredientName}
-                                        onChange={e => setNewIngredientName(e.target.value)}
-                                        className="h-8 text-sm"
-                                    />
-                                    <Button 
-                                        type="button" 
-                                        size="sm" 
-                                        variant="secondary" 
-                                        className="h-8 shrink-0"
-                                        disabled={isCreatingIngredient || !newIngredientName.trim()}
-                                        onClick={handleCreateIngredient}
-                                    >
-                                        {isCreatingIngredient ? 'Création...' : 'Créer et ajouter'}
-                                    </Button>
+                            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                                <div className="mt-4 p-4 border border-dashed rounded-md bg-background/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <h4 className="text-sm font-medium">L'ingrédient n'existe pas ?</h4>
+                                        <p className="text-xs text-muted-foreground">Créez un nouveau produit simple complet (Stock, Prix, Catégorie) sans quitter cette page.</p>
+                                    </div>
+                                    <DialogTrigger asChild>
+                                        <Button type="button" size="sm" variant="secondary" className="shrink-0">
+                                            <Plus className="h-4 w-4 mr-2" /> Créer un nouveau produit
+                                        </Button>
+                                    </DialogTrigger>
                                 </div>
-                            </div>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Création Rapide de Produit Simple</DialogTitle>
+                                        <DialogDescription>
+                                            Créez votre ingrédient avec ses informations de base. Il sera automatiquement ajouté à votre composition.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-3">
+                                        <div>
+                                            <Label>Nom du produit</Label>
+                                            <Input 
+                                                autoFocus
+                                                placeholder="Ex: Fromage Cheddar, Huile (L)" 
+                                                value={newIngredientName}
+                                                onChange={e => setNewIngredientName(e.target.value)}
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <Label>Prix standard / Coût (HT)</Label>
+                                                <Input 
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00" 
+                                                    value={newIngredientPrice}
+                                                    onChange={e => setNewIngredientPrice(e.target.value)}
+                                                    className="mt-1"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label>Stock Initial (Quantité)</Label>
+                                                <Input 
+                                                    type="number"
+                                                    step="1"
+                                                    placeholder="0" 
+                                                    value={newIngredientStock}
+                                                    onChange={e => setNewIngredientStock(e.target.value)}
+                                                    className="mt-1"
+                                                />
+                                            </div>
+                                        </div>
+                                        {categories && categories.length > 0 && (
+                                            <div>
+                                                <Label>Catégorie (Optionnel)</Label>
+                                                <select
+                                                    value={newIngredientCategory}
+                                                    onChange={(e) => setNewIngredientCategory(e.target.value)}
+                                                    className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                >
+                                                    <option value="">-- Sans catégorie --</option>
+                                                    {categories.map((cat) => (
+                                                        <option key={cat.id_categorie} value={cat.id_categorie}>
+                                                            {cat.nom}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <DialogFooter>
+                                        <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
+                                        <Button 
+                                            type="button" 
+                                            disabled={isCreatingIngredient || !newIngredientName.trim()}
+                                            onClick={handleCreateIngredient}
+                                        >
+                                            {isCreatingIngredient ? 'Création...' : 'Créer et ajouter'}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     )}
                 </div>

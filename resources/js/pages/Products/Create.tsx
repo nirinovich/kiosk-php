@@ -323,6 +323,7 @@ export default function Create({ attributs, categories: initialCategories, avail
                                                 variante={variante}
                                                 attributs={attributs}
                                                 availableVariantes={variantesDispo}
+                                                categories={initialCategories}
                                                 isPackMode={productType === 'pack'}
                                                 onUpdate={updateVariante}
                                                 onDelete={supprimerVariante}

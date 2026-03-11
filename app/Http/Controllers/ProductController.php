@@ -70,17 +70,22 @@ class ProductController extends Controller
     public function quickCreateIngredient(Request $request) {
         $request->validate([
             'name' => 'required|string|max:255',
+            'prix_standard' => 'nullable|numeric|min:0',
+            'id_categorie' => 'nullable|exists:categories,id_categorie',
+            'stock_reel' => 'nullable|numeric|min:0',
         ]);
         
         DB::beginTransaction();
         try {
             $produit = ProduitModele::create([
                 'name' => $request->name,
-                'prix_standard' => 0,
+                'prix_standard' => $request->prix_standard ?? 0,
+                'id_categorie' => $request->id_categorie ?: null,
             ]);
             
+            $stock = $request->stock_reel ?? 0;
             $variante = $produit->variantes()->create([
-                'stock_reel' => 0,
+                'stock_reel' => $stock,
                 'est_pack' => false,
             ]);
             DB::commit();

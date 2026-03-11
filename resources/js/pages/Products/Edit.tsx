@@ -343,6 +343,7 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                                 variante={variante}
                                                 attributs={attributs}
                                                 availableVariantes={variantesDispo}
+                                                categories={categories}
                                                 isPackMode={productType === 'pack'}
                                                 onUpdate={updateVariante}
                                                 onDelete={supprimerVariante}
