@@ -77,6 +77,6 @@ class ProduitVariante extends Model
                 $quantitesPossibles[] = floor($composant->stock_reel / $quantiteRequise);
             }
         }
-        return min($quantitesPossibles);  // Le stock limité par l'ingrédient dont on a le moins
+        return count($quantitesPossibles) > 0 ? min($quantitesPossibles) : 0;  // Le stock limité par l'ingrédient dont on a le moins
     }
 }

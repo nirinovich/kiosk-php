@@ -69,6 +69,7 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
     const [newIngredientPrice, setNewIngredientPrice] = useState('0');
     const [newIngredientStock, setNewIngredientStock] = useState('0');
     const [newIngredientCategory, setNewIngredientCategory] = useState<string>('');
+    const [newIngredientUnit, setNewIngredientUnit] = useState<string>('unité');
     const [isCreatingIngredient, setIsCreatingIngredient] = useState(false);
     const handleAddCustom = () => {
         const attrInput = document.getElementById(`attr-name-${index}`) as HTMLInputElement;
@@ -113,7 +114,8 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                 name: newIngredientName,
                 prix_standard: Number(newIngredientPrice),
                 stock_reel: Number(newIngredientStock),
-                id_categorie: newIngredientCategory ? Number(newIngredientCategory) : null
+                id_categorie: newIngredientCategory ? Number(newIngredientCategory) : null,
+                unite_mesure: newIngredientUnit,
             });
             
             if (response.data?.id_variante) {
@@ -149,6 +151,7 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
             setNewIngredientPrice('0');
             setNewIngredientStock('0');
             setNewIngredientCategory('');
+            setNewIngredientUnit('unité');
             setDialogOpen(false);
         }
     };
@@ -353,6 +356,19 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                                                 </select>
                                             </div>
                                         )}
+                                        <div>
+                                            <Label>Unité de mesure</Label>
+                                            <select
+                                                value={newIngredientUnit}
+                                                onChange={(e) => setNewIngredientUnit(e.target.value)}
+                                                className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                                <option value="unité">Unité</option>
+                                                <option value="kg">Kilogramme (kg)</option>
+                                                <option value="gramme">Gramme (g)</option>
+                                                <option value="litre">Litre (L)</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <DialogFooter>
                                         <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>

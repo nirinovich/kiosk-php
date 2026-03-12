@@ -9,19 +9,30 @@ class StockService
 {   
     public function mouvement($varianteId, $quantite, $type, $description = null, $commandeId = null)
     {
-        $variante = ProduitVariante::lockForUpdate()->findOrFail($varianteId);
+        $variante = ProduitVariante::with('modele')->lockForUpdate()->findOrFail($varianteId);
+
+        if (strcasecmp($variante->modele->unite_mesure ?? '', 'unité') === 0) {
+            $quantite = round($quantite);
+        }
 
         if ($variante->est_pack) {
             foreach ($variante->composants as $composant) {
+                // Also preload modele for component if needed, or query it
+                $composant->loadMissing('modele');
+                
                 $quantite_composant = $composant->pivot->quantite * $quantite;
+                if (strcasecmp($composant->modele->unite_mesure ?? '', 'unité') === 0) {
+                    $quantite_composant = round($quantite_composant);
+                }
+
                 $composant->increment('stock_reel', $quantite_composant);
 
                 MouvementStock::create([
                     'id_variante' => $composant->id_variante,
                     'quantite' => $quantite_composant,
                     'type' => $type,
-                    'description' => $description . " (Via Pack : " . $variante->reference_sku . ")",
-                    'id_commande_origine' => $commandeId
+                    'motif' => $description . " (Via Pack : " . $variante->reference_sku . ")",
+                    'id_commande' => $commandeId
                 ]);
             }
         } else {
@@ -31,8 +42,8 @@ class StockService
                 'id_variante' => $varianteId,
                 'quantite' => $quantite,
                 'type' => $type,
-                'description' => $description,
-                'id_commande_origine' => $commandeId
+                'motif' => $description,
+                'id_commande' => $commandeId
             ]);
         }
     }
@@ -106,16 +117,20 @@ class StockService
     /**
      * Ajuster le stock d'une variante.
      */
-    public function ajusterStock(int $id_variante, int $quantite,string $type, string $motif, int $commandeId = null)
+    public function ajusterStock(int $id_variante, float $quantite, string $type, string $motif, int $commandeId = null)
     {
-        $variante = ProduitVariante::findOrFail($id_variante);
+        $variante = ProduitVariante::with('modele')->findOrFail($id_variante);
+
+        if (strcasecmp($variante->modele->unite_mesure ?? '', 'unité') === 0) {
+            $quantite = round($quantite);
+        }
 
         MouvementStock::create([
             'id_variante' => $variante->id_variante,
             'quantite' => $quantite,
             'type' => $type,
             'motif' => $motif,
-            'id_commande_origine' => $commandeId
+            'id_commande' => $commandeId
         ]);
 
         $variante->increment('stock_reel', $quantite);

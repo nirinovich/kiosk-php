@@ -14,6 +14,7 @@ import { CategoryCombobox } from '@/components/category-combobox';
 import { VariantCard, type VarianteFormData } from '@/components/variant-card';
 import { FormErrors } from '@/components/form-errors';
 import { ImageUpload } from '@/components/image-upload';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Valeur {
     id_valeur: number;
@@ -49,6 +50,7 @@ interface ProduitModele {
     description: string;
     image_url: string | null;
     id_categorie: number;
+    unite_mesure: string;
     variantes: VarianteDepuisBDD[];
 }
 
@@ -64,11 +66,11 @@ interface Props {
 export default function Edit({ produit_modele, attributs, categories: initialCategories, isSimpleProduct, currentStock, availableVariantes }: Props) {
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
     const [variantesDispo, setVariantesDispo] = useState<VarianteFormData[]>(availableVariantes || []);
-    
+
     // Determine initial type based on DB data
     const isPackOnly = !isSimpleProduct && produit_modele.variantes?.length === 1 && produit_modele.variantes[0].est_pack;
     const initialProductType = isSimpleProduct ? 'simple' : (isPackOnly ? 'pack' : 'variable');
-    
+
     const [productType, setProductType] = useState<'simple' | 'variable' | 'pack'>(initialProductType);
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -80,15 +82,15 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
     const initialVariantes: VarianteFormData[] = isSimpleProduct
         ? []
         : produit_modele.variantes?.map((v: any) => ({
-              id_variante: v.id_variante,
-              sku: v.reference_sku || '',
-              surcout: Number(v.surcout_prix) || 0,
-              stock_reel: Number(v.stock_reel) || 0,
-              valeurs_ids: v.valeurs.map((val: any) => val.id_valeur),
-              valeurs_custom: [],
-              est_pack: v.est_pack,
-              composants: v.composants || []
-          })) ?? [];
+            id_variante: v.id_variante,
+            sku: v.reference_sku || '',
+            surcout: Number(v.surcout_prix) || 0,
+            stock_reel: Number(v.stock_reel) || 0,
+            valeurs_ids: v.valeurs.map((val: any) => val.id_valeur),
+            valeurs_custom: [],
+            est_pack: v.est_pack,
+            composants: v.composants || []
+        })) ?? [];
 
     const { data, setData, post, processing, errors } = useForm({
         _method: 'PUT' as const,
@@ -98,6 +100,7 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
         image_url: null as File | null,
         remove_image: false,
         id_categorie: produit_modele.id_categorie || ('' as number | string),
+        unite_mesure: produit_modele.unite_mesure || 'unité',
         is_simple: isSimpleProduct,
         stock_initial: currentStock,
         variantes: initialVariantes,
@@ -115,15 +118,15 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
             setData((prev) => ({
                 ...prev,
                 is_simple: false,
-                variantes: prev.variantes.length > 0 && !prev.variantes[0].est_pack 
-                    ? prev.variantes 
+                variantes: prev.variantes.length > 0 && !prev.variantes[0].est_pack
+                    ? prev.variantes
                     : [{ sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [] }]
             }));
         } else if (type === 'pack') {
             setData((prev) => {
                 const variants = [...prev.variantes];
                 if (variants.length === 0) {
-                    return { ...prev, is_simple: false, variantes: [{...emptyPack}] };
+                    return { ...prev, is_simple: false, variantes: [{ ...emptyPack }] };
                 } else {
                     variants[0] = { ...variants[0], est_pack: true };
                     if (!variants[0].composants || variants[0].composants.length < 2) {
@@ -274,6 +277,21 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                             onChange={(v) => setData('id_categorie', v)}
                                             onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
                                         />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="unite_mesure">Unité de mesure *</Label>
+                                        <Select onValueChange={(v) => setData('unite_mesure', v)} defaultValue={data.unite_mesure}>
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder="Sélectionnez l'unité" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="unité">Unité</SelectItem>
+                                                <SelectItem value="kg">Kilogramme (kg)</SelectItem>
+                                                <SelectItem value="gramme">Gramme (g)</SelectItem>
+                                                <SelectItem value="litre">Litre (L)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.unite_mesure && <p className="text-xs text-destructive mt-1">{errors.unite_mesure}</p>}
                                     </div>
                                 </div>
 

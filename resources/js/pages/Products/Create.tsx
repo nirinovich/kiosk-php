@@ -14,6 +14,7 @@ import { CategoryCombobox } from '@/components/category-combobox';
 import { VariantCard, type VarianteFormData } from '@/components/variant-card';
 import { FormErrors } from '@/components/form-errors';
 import { ImageUpload } from '@/components/image-upload';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: dashboard().url },
@@ -51,27 +52,28 @@ interface FormState {
     stock_initial: number;
     image_url: File | null;
     id_categorie: number | string;
+    unite_mesure: string;
     variantes: VarianteFormData[];
 }
 
 export default function Create({ attributs, categories: initialCategories, availableVariantes }: Props) {
 
     console.log("Ce que Laravel envoie :", availableVariantes);
-    
+
     // Support initial type from URL
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
     const initialTypeParam = searchParams.get('type');
-    
+
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
     const [variantesDispo, setVariantesDispo] = useState<VarianteFormData[]>(availableVariantes || []);
     const [productType, setProductType] = useState<'simple' | 'variable' | 'pack'>(initialTypeParam === 'pack' ? 'pack' : 'simple');
 
     // Create a robust empty variant template
-    const emptyVariant: VarianteFormData = { 
-        sku: '', 
-        surcout: 0, 
-        stock_reel: 0, 
-        valeurs_ids: [], 
+    const emptyVariant: VarianteFormData = {
+        sku: '',
+        surcout: 0,
+        stock_reel: 0,
+        valeurs_ids: [],
         valeurs_custom: [],
         est_pack: false,
         composants: []
@@ -90,6 +92,7 @@ export default function Create({ attributs, categories: initialCategories, avail
         stock_initial: 0,
         image_url: null,
         id_categorie: '',
+        unite_mesure: 'unité',
         // Initialize based on URL param
         variantes: initialTypeParam === 'pack' ? [emptyPack] : [],
     });
@@ -103,12 +106,12 @@ export default function Create({ attributs, categories: initialCategories, avail
         } else if (type === 'variable') {
             // If we already have variants (and not just a pack), keep them. Otherwise set one empty variant
             if (data.variantes.length === 0 || data.variantes[0].est_pack) {
-                setData('variantes', [{...emptyVariant}]);
+                setData('variantes', [{ ...emptyVariant }]);
             }
         } else if (type === 'pack') {
             // Force the first variant to be a pack
             if (data.variantes.length === 0) {
-                setData('variantes', [{...emptyPack}]);
+                setData('variantes', [{ ...emptyPack }]);
             } else {
                 const updated = [...data.variantes];
                 updated[0] = { ...updated[0], est_pack: true };
@@ -186,7 +189,7 @@ export default function Create({ attributs, categories: initialCategories, avail
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* ── Type selector (Visual upgrade) ── */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div 
+                        <div
                             onClick={() => handleProductTypeChange('simple')}
                             className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'simple' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
                         >
@@ -195,7 +198,7 @@ export default function Create({ attributs, categories: initialCategories, avail
                             <p className="text-xs mt-1">Un produit classique avec un stock unique.</p>
                         </div>
 
-                        <div 
+                        <div
                             onClick={() => handleProductTypeChange('variable')}
                             className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'variable' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
                         >
@@ -204,7 +207,7 @@ export default function Create({ attributs, categories: initialCategories, avail
                             <p className="text-xs mt-1">Gérez différentes tailles, couleurs ou options.</p>
                         </div>
 
-                        <div 
+                        <div
                             onClick={() => handleProductTypeChange('pack')}
                             className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${productType === 'pack' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/50 hover:border-primary/30 bg-card hover:bg-muted/30 text-muted-foreground'}`}
                         >
@@ -260,6 +263,21 @@ export default function Create({ attributs, categories: initialCategories, avail
                                             onChange={(v) => setData('id_categorie', v)}
                                             onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
                                         />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="unite_mesure">Unité de mesure *</Label>
+                                        <Select onValueChange={(v) => setData('unite_mesure', v)} defaultValue={data.unite_mesure}>
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder="Sélectionnez l'unité" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="unité">Unité</SelectItem>
+                                                <SelectItem value="kg">Kilogramme (kg)</SelectItem>
+                                                <SelectItem value="gramme">Gramme (g)</SelectItem>
+                                                <SelectItem value="litre">Litre (L)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.unite_mesure && <p className="text-xs text-destructive mt-1">{errors.unite_mesure}</p>}
                                     </div>
                                 </div>
 
