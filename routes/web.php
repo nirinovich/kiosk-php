@@ -43,54 +43,35 @@ Route::middleware('onboarded')->group(function () {
     })->name('home');
 });
 
+// =========================================================
+// ROUTES ACCESSIBLES À TOUT LE MONDE (Vendeur, Gérant, Admin)
+// =========================================================
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // POS et Ventes (Le cœur du métier du vendeur)
+    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+    Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+    Route::get('/ventes', [CommandeController::class, 'index'])->name('ventes.index');
+    Route::get('/ventes/create', [CommandeController::class, 'create'])->name('ventes.create');
+    Route::post('/ventes', [CommandeController::class, 'store'])->name('ventes.store');
+    Route::get('/ventes/{commande}', [CommandeController::class, 'show'])->name('ventes.show');
+    Route::post('/factures', [FactureController::class, 'store'])->name('factures.store');
+    Route::get('/factures/{facture}', [FactureController::class, 'show'])->name('factures.show');
+
+    // Consultation (Lecture seule ou actions limitées)
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
-    Route::post('/products/quick-ingredient', [ProductController::class, 'quickCreateIngredient'])->name('products.quick_ingredient');
-    Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
-    Route::get('/products/{produit_modele}/edit', [ProductController::class, 'edit'])->name('products.edit')->middleware('can:update,produit_modele');
-    Route::put('/products/{produit_modele}', [ProductController::class, 'update'])->name('products.update')->middleware('can:update,produit_modele');
-    Route::delete('/products/{produit_modele}', [ProductController::class, 'destroy'])->name('products.destroy')->middleware('can:delete,produit_modele');
-
-    // Catégories
     Route::get('/categories', [CategorieController::class, 'index'])->name('categories.index');
-    Route::get('/categories/create', [CategorieController::class, 'create'])->name('categories.create');
-    Route::post('/categories', [CategorieController::class, 'store'])->name('categories.store');
-    Route::get('/categories/{categorie}/edit', [CategorieController::class, 'edit'])->name('categories.edit');
-    Route::put('/categories/{categorie}', [CategorieController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{categorie}', [CategorieController::class, 'destroy'])->name('categories.destroy');
+    Route::get('/stock', [StockController::class, 'index'])->name('stocks.index');
+    Route::get('/stock/historique', [StockController::class, 'historique'])->name('stocks.historique');
 
-    // Clients
+    // Clients (Le vendeur peut créer et modifier, mais pas supprimer)
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
     Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
     Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
     Route::get('/clients/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
     Route::put('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
-    Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
-
-    // Ventes (Journal des ventes)
-    Route::get('/ventes', [CommandeController::class, 'index'])->name('ventes.index');
-    Route::get('/ventes/create', [CommandeController::class, 'create'])->name('ventes.create');
-    Route::post('/ventes', [CommandeController::class, 'store'])->name('ventes.store');
-    Route::get('/ventes/{commande}', [CommandeController::class, 'show'])->name('ventes.show');
-
-    // Factures
-    Route::post('/factures', [FactureController::class, 'store'])->name('factures.store');
-    Route::get('/factures/{facture}', [FactureController::class, 'show'])->name('factures.show');
-
-    // Point de Vente (POS)
-    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
-    Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
-
-    // Stock
-    Route::get('/stock', [StockController::class, 'index'])->name('stocks.index');
-    Route::get('/stock/historique', [StockController::class, 'historique'])->name('stocks.historique');
-    Route::post('/stock/ajustement', [StockController::class, 'ajustement'])->name('stocks.ajustement');
-    Route::get('/stock/modification', [StockController::class, 'modification'])->name('stocks.modification');
-
-
 });
 
 Route::middleware(['auth', 'role:Admin,Gérant'])->group(function () {
@@ -101,6 +82,28 @@ Route::middleware(['auth', 'role:Admin,Gérant'])->group(function () {
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+    Route::post('/products/quick-ingredient', [ProductController::class, 'quickCreateIngredient'])->name('products.quick_ingredient');
+    // Note : edit, update et destroy peuvent rester ici OU être gérés par Policy comme vu précédemment.
+    Route::get('/products/{produit_modele}/edit', [ProductController::class, 'edit'])->name('products.edit');
+    Route::put('/products/{produit_modele}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{produit_modele}', [ProductController::class, 'destroy'])->name('products.destroy');
+
+    // Modification du catalogue (Catégories)
+    Route::get('/categories/create', [CategorieController::class, 'create'])->name('categories.create');
+    Route::post('/categories', [CategorieController::class, 'store'])->name('categories.store');
+    Route::get('/categories/{categorie}/edit', [CategorieController::class, 'edit'])->name('categories.edit');
+    Route::put('/categories/{categorie}', [CategorieController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{categorie}', [CategorieController::class, 'destroy'])->name('categories.destroy');
+
+    // Ajustements manuels de stock
+    Route::post('/stock/ajustement', [StockController::class, 'ajustement'])->name('stocks.ajustement');
+    Route::get('/stock/modification', [StockController::class, 'modification'])->name('stocks.modification');
+
+    // Suppression de client
+    Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
 });
 
 require __DIR__.'/settings.php';
