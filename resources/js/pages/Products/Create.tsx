@@ -1,21 +1,21 @@
 import { Head, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import products from '@/routes/products';
-import { dashboard } from '@/routes';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusIcon, Package, Layers, PackagePlus, Tags } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { CategoryCombobox } from '@/components/category-combobox';
-import { VariantCard, type VarianteFormData } from '@/components/variant-card';
 import { FormErrors } from '@/components/form-errors';
 import { ImageUpload } from '@/components/image-upload';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { VariantCard, type VarianteFormData } from '@/components/variant-card';
+import AppLayout from '@/layouts/app-layout';
+import { dashboard } from '@/routes';
+import products from '@/routes/products';
+import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: dashboard().url },

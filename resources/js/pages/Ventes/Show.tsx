@@ -1,10 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import ventes from '@/routes/ventes';
-import factures from '@/routes/factures';
-import { Button } from '@/components/ui/button';
+import { ArrowLeft, FileText, Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
@@ -14,7 +11,10 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, FileText, Printer } from 'lucide-react';
+import AppLayout from '@/layouts/app-layout';
+import factures from '@/routes/factures';
+import ventes from '@/routes/ventes';
+import type { BreadcrumbItem } from '@/types';
 
 interface LigneCommande {
     id: number;

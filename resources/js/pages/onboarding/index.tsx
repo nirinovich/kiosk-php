@@ -1,15 +1,15 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import KioskLogo from '@/components/kiosk-logo';
+import { CheckCircle, UserPlus, ArrowRight, SkipForward, ArrowLeft, Users } from 'lucide-react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
+import KioskLogo from '@/components/kiosk-logo';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle, UserPlus, ArrowRight, SkipForward, ArrowLeft, Users } from 'lucide-react';
-import { useState } from 'react';
+import { Spinner } from '@/components/ui/spinner';
 
 type Utilisateur = {
     id: number;

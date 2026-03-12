@@ -1,9 +1,9 @@
 import { Head, usePage } from '@inertiajs/react';
+import { DollarSign, ShoppingCart, Users, Package, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
-import { DollarSign, ShoppingCart, Users, Package, TrendingUp, AlertTriangle } from 'lucide-react';
+import type { BreadcrumbItem } from '@/types';
 
 interface KPIs {
     totalRevenue: number;

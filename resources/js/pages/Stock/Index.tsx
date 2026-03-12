@@ -1,10 +1,7 @@
-import React, { useState, useMemo } from 'react';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
+import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -13,6 +10,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
 import stocks from '@/routes/stocks';
 
 interface Modele {

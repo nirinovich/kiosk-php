@@ -1,10 +1,28 @@
+import axios from 'axios';
+import { Package, Plus, Trash2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Search } from "lucide-react"
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Package, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import axios from 'axios';
 
 interface Valeur {
     id_valeur: number;
@@ -23,15 +41,6 @@ export interface Categorie {
     nom: string;
 }
 
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
 
 export interface ComposantFormData {
     id_variante: number | string;
@@ -64,21 +73,12 @@ interface Props {
     onIngredientCreated?: (newIng: VarianteFormData) => void;
 }
 
-import { Check, ChevronsUpDown, Search } from "lucide-react"
-import { cn } from "@/lib/utils"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 
 function getUnitLabel(unit?: string): string {
     switch (unit) {

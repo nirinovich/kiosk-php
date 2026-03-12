@@ -1,13 +1,9 @@
 import { Head, Link, usePage, router, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import categories from '@/routes/categories';
-import products from '@/routes/products';
-import { dashboard } from '@/routes';
+import { InfoIcon, PlusIcon, SearchIcon, Tag, Pencil, Trash2, ArrowLeft } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
     Table,
     TableBody,
@@ -16,7 +12,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { InfoIcon, PlusIcon, SearchIcon, Tag, Pencil, Trash2, ArrowLeft } from 'lucide-react';
+import AppLayout from '@/layouts/app-layout';
+import { dashboard } from '@/routes';
+import categories from '@/routes/categories';
+import products from '@/routes/products';
+import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: dashboard().url },

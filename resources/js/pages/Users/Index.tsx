@@ -1,9 +1,7 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 import {
     Table,
@@ -14,7 +12,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import AppLayout from '@/layouts/app-layout';
 import users from '@/routes/users';
+import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

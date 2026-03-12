@@ -1,10 +1,10 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import React, { useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import AppLayout from '@/layouts/app-layout';
 import stocks from '@/routes/stocks';
 
-import React, { useState } from 'react';
 
 interface Variante {
     id_variante: number;

@@ -11,15 +11,15 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { dashboard } from '@/routes';
+import clients from '@/routes/clients';
+import pos from '@/routes/pos';
+import products from '@/routes/products';
+import stocks from '@/routes/stocks';
+import users from '@/routes/users';
+import ventes from '@/routes/ventes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
-import { dashboard } from '@/routes';
-import products from '@/routes/products';
-import clients from '@/routes/clients';
-import ventes from '@/routes/ventes';
-import users from '@/routes/users';
-import pos from '@/routes/pos';
-import stocks from '@/routes/stocks';
 
 const mainNavItems: NavItem[] = [
     {

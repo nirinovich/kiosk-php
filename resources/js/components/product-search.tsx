@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 export interface Variante {
     id_variante: number;

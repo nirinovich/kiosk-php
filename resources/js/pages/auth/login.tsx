@@ -1,6 +1,6 @@
 import { Form, Head, usePage } from '@inertiajs/react';
-import { useEffect } from 'react';
 import { router } from '@inertiajs/react';
+import { useEffect } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';

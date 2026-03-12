@@ -1,3 +1,4 @@
+import { Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -8,7 +9,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Trash2, AlertTriangle } from 'lucide-react';
 import { Badge } from './ui/badge';
 
 export interface LigneItem {

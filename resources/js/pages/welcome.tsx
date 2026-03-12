@@ -1,6 +1,7 @@
 ﻿import { Head, useForm, usePage } from '@inertiajs/react';
-import KioskLogo from '@/components/kiosk-logo';
+import { LogIn } from 'lucide-react';
 import InputError from '@/components/input-error';
+import KioskLogo from '@/components/kiosk-logo';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { LogIn } from 'lucide-react';
 
 type PageProps = {
     flash: { message?: string };

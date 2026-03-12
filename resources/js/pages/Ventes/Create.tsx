@@ -1,19 +1,19 @@
-import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import ventes from '@/routes/ventes';
-import { dashboard } from '@/routes';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { ProductSearch, type Variante } from '@/components/product-search';
+import { AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
 import { ClientSelect, type ClientOption } from '@/components/client-select';
+import { FormErrors } from '@/components/form-errors';
 import { LineItemsTable, type LigneItem } from '@/components/line-items-table';
 import { OrderSummary } from '@/components/order-summary';
-import { FormErrors } from '@/components/form-errors';
-import { AlertTriangle } from 'lucide-react';
+import { ProductSearch, type Variante } from '@/components/product-search';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
+import ventes from '@/routes/ventes';
+import type { BreadcrumbItem } from '@/types';
+import { dashboard } from '@/routes';
+import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: dashboard().url },

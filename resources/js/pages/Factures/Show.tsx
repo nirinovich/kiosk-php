@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import ventes from '@/routes/ventes';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Table,
@@ -9,7 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Printer } from 'lucide-react';
+import ventes from '@/routes/ventes';
 
 interface LigneFacture {
     id: number;

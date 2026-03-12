@@ -1,16 +1,16 @@
 import { Head, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import categories from '@/routes/categories';
-import products from '@/routes/products';
-import { dashboard } from '@/routes';
+import { Tag } from 'lucide-react';
+import { FormErrors } from '@/components/form-errors';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tag } from 'lucide-react';
-import { FormErrors } from '@/components/form-errors';
+import AppLayout from '@/layouts/app-layout';
+import { dashboard } from '@/routes';
+import categories from '@/routes/categories';
+import products from '@/routes/products';
+import type { BreadcrumbItem } from '@/types';
 
 interface Categorie {
     id_categorie: number;

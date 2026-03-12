@@ -1,13 +1,5 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Head, useForm, usePage, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import pos from '@/routes/pos';
-import { dashboard } from '@/routes';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
+import axios from 'axios';
 import {
     Search,
     Plus,
@@ -21,7 +13,19 @@ import {
     Delete,
     Hash,
     ArrowLeft,
+    ScanBarcode,
+    XCircle,
 } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { BarcodeScanner } from '@/components/barcode-scanner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import AppLayout from '@/layouts/app-layout';
+import { dashboard } from '@/routes';
+import pos from '@/routes/pos';
+import type { BreadcrumbItem } from '@/types';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -33,6 +37,7 @@ interface PosProduct {
     image_url: string | null;
     id_categorie: number | null;
     est_pack: boolean;
+    code_barre: string | null;
 }
 
 const resolveImageUrl = (imageUrl: string | null) => {
@@ -99,6 +104,10 @@ export default function PosIndex() {
     const [showSuccess, setShowSuccess] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
+    // ── Barcode scanner state ──
+    const [scannerOpen, setScannerOpen] = useState(false);
+    const [scanToast, setScanToast] = useState<{ type: 'success' | 'not_found'; message: string; code: string } | null>(null);
+
     // ── Form ──
     const { post, processing } = useForm();
 
@@ -110,6 +119,14 @@ export default function PosIndex() {
             return () => clearTimeout(timer);
         }
     }, [flash.success]);
+
+    // ── Scan toast auto-dismiss ──
+    useEffect(() => {
+        if (scanToast) {
+            const timer = setTimeout(() => setScanToast(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [scanToast]);
 
     // ── Product filtering ──
     const filteredProducts = useMemo(() => {
@@ -160,6 +177,43 @@ export default function PosIndex() {
             ];
         });
     }, []);
+
+    // ── Barcode scan handler ──
+    const handleBarcodeScan = useCallback(async (barcode: string) => {
+        // 1. Try client-side match first (fast)
+        const matchedProduct = produits.find(
+            (p) => p.code_barre && p.code_barre === barcode
+        );
+
+        if (matchedProduct) {
+            addProduct(matchedProduct);
+            setScanToast({ type: 'success', message: matchedProduct.nom, code: barcode });
+            return;
+        }
+
+        // 2. Fallback to server-side lookup (handles out-of-stock or filtered products)
+        try {
+            const response = await axios.post('/pos/barcode-lookup', { code: barcode });
+            const data = response.data;
+
+            if (data.found && data.produit) {
+                addProduct(data.produit);
+                setScanToast({ type: 'success', message: data.produit.nom, code: barcode });
+            } else {
+                setScanToast({
+                    type: 'not_found',
+                    message: data.message || 'Aucun produit trouvé.',
+                    code: barcode,
+                });
+            }
+        } catch {
+            setScanToast({
+                type: 'not_found',
+                message: 'Erreur lors de la recherche du code-barres.',
+                code: barcode,
+            });
+        }
+    }, [produits, addProduct]);
 
     const updateLineQuantity = useCallback((index: number, delta: number) => {
         setOrderLines((prev) =>
@@ -280,6 +334,30 @@ export default function PosIndex() {
                     {flash.success}
                 </div>
             )}
+
+            {/* Barcode scan toast */}
+            {scanToast && (
+                <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-top-2 ${
+                    scanToast.type === 'success' ? 'bg-green-600' : 'bg-orange-500'
+                }`}>
+                    {scanToast.type === 'success' ? (
+                        <CheckCircle className="h-4 w-4" />
+                    ) : (
+                        <XCircle className="h-4 w-4" />
+                    )}
+                    <div>
+                        <p>{scanToast.message}</p>
+                        <p className="text-xs opacity-80 font-mono">Code: {scanToast.code}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Barcode Scanner Dialog */}
+            <BarcodeScanner
+                open={scannerOpen}
+                onClose={() => setScannerOpen(false)}
+                onScan={handleBarcodeScan}
+            />
 
             <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
                 {/* ═══════════ LEFT PANEL — Order ═══════════ */}
@@ -517,30 +595,41 @@ export default function PosIndex() {
 
                 {/* ═══════════ RIGHT PANEL — Products ═══════════ */}
                 <div className="flex flex-1 flex-col overflow-hidden bg-background">
-                    {/* Search bar */}
+                    {/* Search bar + Scan button */}
                     <div className="border-b border-border px-4 py-3">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                ref={searchInputRef}
-                                placeholder="Rechercher un produit..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9"
-                            />
-                            {searchQuery && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
-                                    onClick={() => {
-                                        setSearchQuery('');
-                                        searchInputRef.current?.focus();
-                                    }}
-                                >
-                                    <X className="h-3.5 w-3.5" />
-                                </Button>
-                            )}
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    ref={searchInputRef}
+                                    placeholder="Rechercher un produit..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-9"
+                                />
+                                {searchQuery && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            searchInputRef.current?.focus();
+                                        }}
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </Button>
+                                )}
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+                                onClick={() => setScannerOpen(true)}
+                                title="Scanner un code-barres"
+                            >
+                                <ScanBarcode className="h-5 w-5" />
+                            </Button>
                         </div>
                     </div>
 

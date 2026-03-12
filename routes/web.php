@@ -83,6 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Point de Vente (POS)
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+    Route::post('/pos/barcode-lookup', [PosController::class, 'barcodeLookup'])->name('pos.barcode_lookup');
 
     // Stock
     Route::get('/stock', [StockController::class, 'index'])->name('stocks.index');

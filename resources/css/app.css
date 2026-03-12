@@ -141,3 +141,33 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* ── Barcode Scanner ───────────────────────────────── */
+
+@keyframes scan-line {
+    0%, 100% { top: 10%; }
+    50% { top: 85%; }
+}
+
+.animate-scan-line {
+    animation: scan-line 2s ease-in-out infinite;
+}
+
+/* Override html5-qrcode default styles inside our dialog */
+#barcode-scanner-container video {
+    object-fit: cover !important;
+    border-radius: 0 !important;
+}
+
+#barcode-scanner-container img {
+    display: none !important;
+}
+
+/* Hide the built-in scan region border since we provide our own */
+#qr-shaded-region {
+    border: none !important;
+}
+
+#barcode-scanner-container > div {
+    border: none !important;
+}
