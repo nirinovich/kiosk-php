@@ -95,7 +95,10 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
             valeurs_ids: v.valeurs.map((val: any) => val.id_valeur),
             valeurs_custom: [],
             est_pack: v.est_pack,
-            composants: v.composants || []
+            composants: (v.composants || []).map((c: any) => ({
+                id_variante: c.id_variante ?? c.id_composant ?? '',
+                quantite: c.pivot?.quantite ?? c.quantite ?? 1
+            }))
         })) ?? [];
 
     const { data, setData, post, processing, errors } = useForm({

@@ -48,7 +48,7 @@ class ProductController extends Controller
 
     private function getAvailableVariantes()
     {
-        return ProduitVariante::with('modele:id_modele,name')
+        return ProduitVariante::with('modele:id_modele,name,unite_mesure')
             ->where('est_pack', false)
             ->get()
             ->map(function ($v) {

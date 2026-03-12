@@ -317,8 +317,8 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                                     <div className="flex items-center gap-2">
                                         <Input
                                             type="number"
-                                            step={isUnite ? "1" : (selectedVariante?.unite_mesure === 'gramme' ? "50" : "0.1")}
-                                            min={isUnite ? "1" : "0.001"}
+                                            step="any"
+                                            min={isUnite ? "1" : (selectedVariante?.unite_mesure === 'gramme' ? "1" : "0.1")}
                                             placeholder="Qté"
                                             value={composant.quantite}
                                             onChange={e => updateComposant(cIndex, 'quantite', e.target.value)}
