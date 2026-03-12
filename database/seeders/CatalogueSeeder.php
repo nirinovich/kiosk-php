@@ -24,7 +24,7 @@ class CatalogueSeeder extends Seeder
         // 1. CRÉATION DES INGRÉDIENTS (Cachés du POS)
         // ---------------------------------------------------
         
-        $poulet = ProduitModele::create(['name' => 'Poulet (kg)', 'prix_standard' => 15000, 'id_categorie' => $catIngredients->id_categorie, 'is_ingredient' => true, 'image_url' => 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?q=80&w=600&auto=format&fit=crop']);
+        $poulet = ProduitModele::create(['name' => 'Poulet (kg)', 'prix_standard' => 15000, 'id_categorie' => $catIngredients->id_categorie, 'is_ingredient' => true, 'image_url' => 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop']);
         $varPoulet = ProduitVariante::create(['id_modele' => $poulet->id_modele, 'reference_sku' => 'ING-POULET', 'stock_reel' => 50]);
 
         $riz = ProduitModele::create(['name' => 'Riz Blanc (kg)', 'prix_standard' => 3000, 'id_categorie' => $catIngredients->id_categorie, 'is_ingredient' => true, 'image_url' => 'https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=600&auto=format&fit=crop']);
@@ -40,16 +40,16 @@ class CatalogueSeeder extends Seeder
         // 2. PRODUITS SIMPLES (Boissons / Vente Directe)
         // ---------------------------------------------------
 
-        $coca = ProduitModele::create(['name' => 'Cocacola Mini 350ml', 'prix_standard' => 2000, 'id_categorie' => $catBoissons->id_categorie, 'image_url' => 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=600&auto=format&fit=crop']);
+        $coca = ProduitModele::create(['name' => 'Cocacola Mini 350ml', 'prix_standard' => 2000, 'id_categorie' => $catBoissons->id_categorie, 'image_url' => 'images/Cola.png']);
         $varCoca = ProduitVariante::create(['id_modele' => $coca->id_modele, 'reference_sku' => 'BOIS-COCA-350', 'stock_reel' => 120, 'code_barre' => '42117131']);
 
-        $eau = ProduitModele::create(['name' => 'Eau vive GM 1,5L', 'prix_standard' => 3000, 'id_categorie' => $catBoissons->id_categorie, 'image_url' => 'https://images.unsplash.com/photo-1548839140-29a749e1abc5?q=80&w=600&auto=format&fit=crop']);
+        $eau = ProduitModele::create(['name' => 'Eau vive GM 1,5L', 'prix_standard' => 3000, 'id_categorie' => $catBoissons->id_categorie, 'image_url' => 'images/EauVive.png']);
         $varEau = ProduitVariante::create(['id_modele' => $eau->id_modele, 'reference_sku' => 'BOIS-EAU-15', 'stock_reel' => 200, 'code_barre' => '9501046019205']);
 
-        $lait = ProduitModele::create(['name' => 'Lait Austria 1L', 'prix_standard' => 4500, 'id_categorie' => $catBoissons->id_categorie, 'image_url' => 'https://images.unsplash.com/photo-1563636619-e9143da7973b?q=80&w=600&auto=format&fit=crop']);
+        $lait = ProduitModele::create(['name' => 'Lait Austria 1L', 'prix_standard' => 4500, 'id_categorie' => $catBoissons->id_categorie, 'image_url' => 'images/Milk.png']);
         $varLait = ProduitVariante::create(['id_modele' => $lait->id_modele, 'reference_sku' => 'BOIS-LAIT-1L', 'stock_reel' => 60, 'code_barre' => '8410297600012']);
 
-        $jus = ProduitModele::create(['name' => 'Jus Naturel (Verre)', 'prix_standard' => 2500, 'id_categorie' => $catBoissons->id_categorie, 'image_url' => 'https://images.unsplash.com/photo-1622597467836-f38ec30113dd?q=80&w=600&auto=format&fit=crop']);
+        $jus = ProduitModele::create(['name' => 'Jus Naturel (Verre)', 'prix_standard' => 2500, 'id_categorie' => $catBoissons->id_categorie, 'image_url' => 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=600&auto=format&fit=crop']);
         $varJus = ProduitVariante::create(['id_modele' => $jus->id_modele, 'reference_sku' => 'BOIS-JUS-NAT', 'stock_reel' => 45]);
 
         // ---------------------------------------------------
@@ -70,7 +70,7 @@ class CatalogueSeeder extends Seeder
             $varFrites->id_variante => ['quantite' => 0.25], 
         ]);
         
-        $menuComplet = ProduitModele::create(['name' => 'Menu: Steak Frites + Coca', 'prix_standard' => 16000, 'id_categorie' => $catMenus->id_categorie, 'image_url' => 'https://images.unsplash.com/photo-1594978583693-82ff8e763b0b?q=80&w=600&auto=format&fit=crop']);
+        $menuComplet = ProduitModele::create(['name' => 'Menu: Steak Frites + Coca', 'prix_standard' => 16000, 'id_categorie' => $catMenus->id_categorie, 'image_url' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&auto=format&fit=crop']);
         $varMenuComplet = ProduitVariante::create(['id_modele' => $menuComplet->id_modele, 'reference_sku' => 'MENU-STK-COCA', 'stock_reel' => 0, 'est_pack' => true]);
         $varMenuComplet->composants()->attach([
             $varBoeuf->id_variante => ['quantite' => 0.2],  

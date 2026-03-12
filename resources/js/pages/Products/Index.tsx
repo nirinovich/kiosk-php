@@ -139,7 +139,11 @@ export default function Index() {
                                     <TableRow key={p.id_modele}>
                                         <TableCell>
                                             {p.image_url ? (
-                                                <img src={`/${p.image_url}`} alt={p.name} className="w-10 h-10 object-cover rounded" />
+                                                <img 
+                                                    src={p.image_url.startsWith('http') ? p.image_url : `/${p.image_url}`} 
+                                                    alt={p.name} 
+                                                    className="w-10 h-10 object-cover rounded" 
+                                                />
                                             ) : (
                                                 <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
                                                     <PackageOpen className="h-4 w-4 text-muted-foreground" />

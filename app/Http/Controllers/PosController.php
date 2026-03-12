@@ -27,12 +27,7 @@ class PosController extends Controller
             ->where('is_ingredient', false)
             ->get()
             ->map(function ($modele) {
-                $variantesEnStock = $modele->variantes->filter(function ($v) {
-                    return $v->stock_disponible > 0; 
-                });
-                if ($variantesEnStock->isEmpty()) return null;
-
-                return $variantesEnStock->map(function ($variante) use ($modele) {
+                return $modele->variantes->map(function ($variante) use ($modele) {
                     $suffix = '';
                     if ($modele->variantes->count() > 1 && $variante->reference_sku) {
                         $suffix = ' (' . $variante->reference_sku . ')';
@@ -51,8 +46,8 @@ class PosController extends Controller
                 });
             })
             ->flatten(1)
-            ->filter(); // Enlève les nulls
-
+            ->filter();
+            
         $categories = Categorie::orderBy('nom')->get(['id_categorie', 'nom']);
         $clients = Client::orderBy('name')->get(['id_client', 'name']);
 
