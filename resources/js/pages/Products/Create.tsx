@@ -75,6 +75,7 @@ export default function Create({ attributs, categories: initialCategories, avail
     // Create a robust empty variant template
     const emptyVariant: VarianteFormData = {
         sku: '',
+        code_barre: '',
         surcout: 0,
         stock_reel: 0,
         valeurs_ids: [],
@@ -99,7 +100,7 @@ export default function Create({ attributs, categories: initialCategories, avail
         unite_mesure: 'unité',
         is_ingredient: false,
         // Initialize based on URL param
-        variantes: initialTypeParam === 'pack' ? [emptyPack] : [],
+        variantes: initialTypeParam === 'pack' ? [emptyPack] : [emptyVariant],
     });
 
     // Remove duplicated emptyVariant
@@ -107,7 +108,7 @@ export default function Create({ attributs, categories: initialCategories, avail
     const handleProductTypeChange = (type: 'simple' | 'variable' | 'pack') => {
         setProductType(type);
         if (type === 'simple') {
-            setData('variantes', []);
+            setData('variantes', [{ ...emptyVariant }]);
         } else if (type === 'variable') {
             setData('is_ingredient', false); // Variable products cannot be ingredients
             // If we already have variants (and not just a pack), keep them. Otherwise set one empty variant
@@ -350,24 +351,45 @@ export default function Create({ attributs, categories: initialCategories, avail
                             </CardHeader>
                             <CardContent className="space-y-4">
 
-                                {/* Simple mode: single stock input */}
-                                {productType === 'simple' && (
-                                    <div className="rounded-lg bg-muted/30 p-4 border border-border/50">
-                                        <div className="mb-4">
-                                            <p className="text-sm font-medium">Stock initial</p>
-                                            <p className="text-xs text-muted-foreground">Définissez la quantité initiale en stock pour ce nouveau produit.</p>
+                                {productType === 'simple' && data.variantes.length > 0 && (
+                                    <div className="rounded-lg bg-muted/30 p-4 border border-border/50 space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <Label className="text-xs">Référence (SKU)</Label>
+                                                <Input
+                                                    placeholder="REF-UNIQUE"
+                                                    value={data.variantes[0].sku || ''}
+                                                    onChange={(e) => updateVariante(0, 'sku', e.target.value)}
+                                                    className="mt-1 bg-background"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label className="text-xs">Code-barres</Label>
+                                                <Input
+                                                    placeholder="Scanner ou taper..."
+                                                    value={data.variantes[0].code_barre || ''}
+                                                    onChange={(e) => updateVariante(0, 'code_barre', e.target.value)}
+                                                    className="mt-1 bg-background"
+                                                />
+                                            </div>
                                         </div>
-                                        <Label htmlFor="stock_initial">Quantité en stock</Label>
-                                        <Input
-                                            id="stock_initial"
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            placeholder="0"
-                                            value={data.stock_initial}
-                                            onChange={(e) => setData('stock_initial', Number(e.target.value))}
-                                            className="mt-1 max-w-xs bg-background"
-                                        />
+
+                                        <div>
+                                            <Label htmlFor="stock_initial">Quantité initiale en stock</Label>
+                                            <Input
+                                                id="stock_initial"
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                placeholder="0"
+                                                value={data.stock_initial}
+                                                onChange={(e) => {
+                                                    setData('stock_initial', Number(e.target.value));
+                                                    updateVariante(0, 'stock_reel', Number(e.target.value));
+                                                }}
+                                                className="mt-1 max-w-xs bg-background"
+                                            />
+                                        </div>
                                     </div>
                                 )}
 

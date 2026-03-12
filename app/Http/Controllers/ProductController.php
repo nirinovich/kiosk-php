@@ -115,6 +115,8 @@ class ProductController extends Controller
             'stock_initial' => 'nullable|integer|min:0',
             'image_url' => 'nullable|image',
             'variantes' => 'nullable|array',
+            'variantes.*.code_barre' => 'nullable|string|max:255',
+            'variantes.*.sku' => 'nullable|string|max:255',
             'variantes.*.stock_reel' => 'nullable|integer|min:0',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
             'unite_mesure' => 'required|in:unité,litre,kg,gramme',
@@ -159,6 +161,7 @@ class ProductController extends Controller
                 // Pas de variantes explicites : on crée une variante par défaut pour gérer le stock
                 $produit->variantes()->create([
                     'reference_sku' => null,
+                    'code_barre' => null,
                     'surcout_prix' => 0,
                     'stock_reel' => $validated['stock_initial'] ?? 0,
                     'est_pack' => false,
@@ -169,6 +172,7 @@ class ProductController extends Controller
 
                     $nouvelleVariante = $produit->variantes()->create([
                         'reference_sku' => $varianteData['sku'] ?? null,
+                        'code_barre' => $varianteData['code_barre'] ?? null,
                         'surcout_prix' => $varianteData['surcout'] ?? 0,
                         'stock_reel' => $estPack ? 0 : ($varianteData['stock_reel'] ?? 0),
                         'est_pack' => $estPack,
@@ -255,6 +259,7 @@ class ProductController extends Controller
 
             'variantes' => 'nullable|array',
             'variantes.*.id_variante' => 'nullable|integer',
+            'variantes.*.code_barre' => 'nullable|string|max:255',
             'variantes.*.sku' => 'nullable|string|max:255',
             'variantes.*.surcout' => 'nullable|numeric',
             'variantes.*.stock_reel' => 'nullable|integer|min:0',
@@ -327,6 +332,7 @@ class ProductController extends Controller
                     $produit_modele->variantes()->where('id_variante', '!=', $defaultVariant->id_variante)->delete();
                     $defaultVariant->update([
                         'reference_sku' => null,
+                        'code_barre' => null,
                         'surcout_prix' => 0,
                         'stock_reel' => $stock,
                         'est_pack' => false,
@@ -336,6 +342,7 @@ class ProductController extends Controller
                 } else {
                     $produit_modele->variantes()->create([
                         'reference_sku' => null,
+                        'code_barre' => null,
                         'surcout_prix' => 0,
                         'stock_reel' => $stock,
                         'est_pack' => false,
@@ -359,6 +366,7 @@ class ProductController extends Controller
                         if ($variante) {
                             $variante->update([
                                 'reference_sku' => $varianteData['sku'] ?? null,
+                                'code_barre' => $varianteData['code_barre'] ?? null,
                                 'surcout_prix' => $varianteData['surcout'] ?? 0,
                                 'stock_reel' => $estPack ? 0 : ($varianteData['stock_reel'] ?? $variante->stock_reel),
                                 'est_pack' => $estPack,
@@ -367,6 +375,7 @@ class ProductController extends Controller
                     } else {
                         $variante = $produit_modele->variantes()->create([
                             'reference_sku' => $varianteData['sku'] ?? null,
+                            'code_barre' => $varianteData['code_barre'] ?? null,
                             'surcout_prix' => $varianteData['surcout'] ?? 0,
                             'stock_reel' => $estPack ? 0 : ($varianteData['stock_reel'] ?? 0),
                             'est_pack' => $estPack,

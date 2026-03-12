@@ -37,6 +37,7 @@ interface Categorie {
 interface VarianteDepuisBDD {
     id_variante: number;
     reference_sku: string;
+    code_barre?: string;
     surcout_prix: number;
     stock_reel: number;
     valeurs: Valeur[];
@@ -85,21 +86,24 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
         { title: `Modifier "${produit_modele.name}"`, href: products.edit(produit_modele.id_modele).url },
     ];
 
-    const initialVariantes: VarianteFormData[] = isSimpleProduct
-        ? []
-        : produit_modele.variantes?.map((v: any) => ({
-            id_variante: v.id_variante,
-            sku: v.reference_sku || '',
-            surcout: Number(v.surcout_prix) || 0,
-            stock_reel: Number(v.stock_reel) || 0,
-            valeurs_ids: v.valeurs.map((val: any) => val.id_valeur),
-            valeurs_custom: [],
-            est_pack: v.est_pack,
-            composants: (v.composants || []).map((c: any) => ({
-                id_variante: c.id_variante ?? c.id_composant ?? '',
-                quantite: c.pivot?.quantite ?? c.quantite ?? 1
-            }))
-        })) ?? [];
+    const mappedVariantes: VarianteFormData[] = produit_modele.variantes?.map((v: any) => ({
+        id_variante: v.id_variante,
+        sku: v.reference_sku || '',
+        code_barre: v.code_barre || '',
+        surcout: Number(v.surcout_prix) || 0,
+        stock_reel: Number(v.stock_reel) || 0,
+        valeurs_ids: v.valeurs ? v.valeurs.map((val: any) => val.id_valeur) : [],
+        valeurs_custom: [],
+        est_pack: v.est_pack,
+        composants: (v.composants || []).map((c: any) => ({
+            id_variante: c.id_variante ?? c.id_composant ?? '',
+            quantite: c.pivot?.quantite ?? c.quantite ?? 1
+        }))
+    })) ?? [];
+
+    const initialVariantes: VarianteFormData[] = isSimpleProduct && mappedVariantes.length === 0
+        ? [{ sku: '', code_barre: '', surcout: 0, stock_reel: currentStock || 0, valeurs_ids: [], valeurs_custom: [], est_pack: false, composants: [] }]
+        : mappedVariantes;
 
     const { data, setData, post, processing, errors } = useForm({
         _method: 'PUT' as const,
@@ -117,13 +121,18 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
     });
 
     const emptyPack: VarianteFormData = {
-        sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [], est_pack: true, composants: [{ id_variante: '', quantite: 1 }, { id_variante: '', quantite: 1 }]
+        sku: '', code_barre: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [], est_pack: true, composants: [{ id_variante: '', quantite: 1 }, { id_variante: '', quantite: 1 }]
     };
 
     const handleProductTypeChange = (type: 'simple' | 'variable' | 'pack') => {
         setProductType(type);
         if (type === 'simple') {
-            setData((prev) => ({ ...prev, is_simple: true, variantes: [], stock_initial: currentStock || 0 }));
+            setData((prev) => ({
+                ...prev,
+                is_simple: true,
+                variantes: prev.variantes.length > 0 ? [prev.variantes[0]] : [{ ...emptyPack, est_pack: false, composants: [] }], // keep the first variant to hold sku/barcode
+                stock_initial: currentStock || 0
+            }));
         } else if (type === 'variable') {
             setData((prev) => ({
                 ...prev,
@@ -131,7 +140,7 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                 is_ingredient: false, // Variable products cannot be ingredients
                 variantes: prev.variantes.length > 0 && !prev.variantes[0].est_pack
                     ? prev.variantes
-                    : [{ sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [], est_pack: false, composants: [] }]
+                    : [{ sku: '', code_barre: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [], est_pack: false, composants: [] }]
             }));
         } else if (type === 'pack') {
             setData((prev) => {
@@ -152,7 +161,7 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
     const ajouterVariante = () => {
         setData('variantes', [
             ...data.variantes,
-            { sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [] },
+            { sku: '', code_barre: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [] },
         ]);
     };
 
@@ -160,7 +169,12 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
         const updated = data.variantes.filter((_, i) => i !== index);
         if (updated.length === 0) {
             setProductType('simple');
-            setData((prev) => ({ ...prev, is_simple: true, variantes: [], stock_initial: 0 }));
+            setData((prev) => ({
+                ...prev,
+                is_simple: true,
+                variantes: [{ ...emptyPack, est_pack: false, composants: [] }],
+                stock_initial: 0
+            }));
             return;
         }
         setData('variantes', updated);
@@ -374,25 +388,44 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                             <CardContent className="space-y-4">
 
                                 {/* Simple mode */}
-                                {productType === 'simple' && (
-                                    <div className="rounded-lg bg-muted/30 p-4 border border-border/50">
-                                        <div className="mb-4">
-                                            <p className="text-sm font-medium">Stock actuel</p>
-                                            <p className="text-xs text-muted-foreground">Modifier la réserve enregistrée.</p>
+                                {productType === 'simple' && data.variantes.length > 0 && (
+                                    <div className="rounded-lg bg-muted/30 p-4 border border-border/50 space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <Label className="text-xs">Référence (SKU)</Label>
+                                                <Input
+                                                    placeholder="REF-UNIQUE"
+                                                    value={data.variantes[0].sku || ''}
+                                                    onChange={(e) => updateVariante(0, 'sku', e.target.value)}
+                                                    className="mt-1 bg-background"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label className="text-xs">Code-barres</Label>
+                                                <Input
+                                                    placeholder="Scanner ou taper..."
+                                                    value={data.variantes[0].code_barre || ''}
+                                                    onChange={(e) => updateVariante(0, 'code_barre', e.target.value)}
+                                                    className="mt-1 bg-background"
+                                                />
+                                            </div>
                                         </div>
-                                        <Label htmlFor="stock_initial">Stock actuel</Label>
-                                        <Input
-                                            id="stock_initial"
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            placeholder="0"
-                                            value={data.stock_initial}
-                                            onChange={(e) => setData('stock_initial', Number(e.target.value))}
-                                            className="mt-1 max-w-xs bg-background"
-                                            disabled
-                                        />
-                                        <p className="text-xs text-muted-foreground mt-2">Le stock doit être géré depuis la section Stock &gt; Ajustement ou Mouvements.</p>
+
+                                        <div>
+                                            <Label htmlFor="stock_initial">Stock actuel</Label>
+                                            <Input
+                                                id="stock_initial"
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                placeholder="0"
+                                                value={data.stock_initial}
+                                                onChange={(e) => setData('stock_initial', Number(e.target.value))}
+                                                className="mt-1 max-w-xs bg-muted"
+                                                disabled
+                                            />
+                                            <p className="text-xs text-muted-foreground mt-2">Le stock doit être géré depuis la section Stock &gt; Ajustement ou Mouvements.</p>
+                                        </div>
                                     </div>
                                 )}
 

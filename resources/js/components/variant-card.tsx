@@ -50,6 +50,7 @@ export interface ComposantFormData {
 export interface VarianteFormData {
     id_variante?: number;
     sku: string;
+    code_barre?: string;
     surcout: number;
     stock_reel: number;
     valeurs_ids: number[];
@@ -203,14 +204,25 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                 {/* SKU, Surcoût, Stock row */}
                 {!isPackMode && (
                 <div className="grid grid-cols-3 gap-4">
-                    <div>
-                        <Label className="text-xs">Référence (SKU)</Label>
-                        <Input
-                            placeholder={`REF-${index + 1}`}
-                            value={variante.sku}
-                            onChange={(e) => onUpdate(index, 'sku', e.target.value)}
-                            className="mt-1"
-                        />
+                    <div className="flex gap-2">
+                        <div className="flex-1">
+                            <Label className="text-xs">Référence (SKU)</Label>
+                            <Input
+                                placeholder={`REF-${index + 1}`}
+                                value={variante.sku}
+                                onChange={(e) => onUpdate(index, 'sku', e.target.value)}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <Label className="text-xs">Code-barres</Label>
+                            <Input
+                                placeholder="Scanner ou taper..."
+                                value={variante.code_barre || ''}
+                                onChange={(e) => onUpdate(index, 'code_barre', e.target.value)}
+                                className="mt-1"
+                            />
+                        </div>
                     </div>
                     <div>
                         <Label className="text-xs">Surcoût prix (HT)</Label>
