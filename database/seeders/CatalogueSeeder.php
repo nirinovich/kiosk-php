@@ -3,8 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Attribut;
-use App\Models\ValeurAttribut;
 use App\Models\ProduitModele;
 use App\Models\ProduitVariante;
 use App\Models\Categorie;
@@ -14,108 +12,76 @@ class CatalogueSeeder extends Seeder
     public function run()
     {
         // ---------------------------------------------------
-        // 0. CRÉATION DES CATÉGORIES
+        // 0. CRÉATION DES CATÉGORIES (Restaurant)
         // ---------------------------------------------------
 
-        $catVetements = Categorie::create(['nom' => 'Vêtements', 'description' => 'Articles textiles et habillement']);
-        $catAccessoires = Categorie::create(['nom' => 'Accessoires', 'description' => 'Objets et accessoires divers']);
-        $catGoodies = Categorie::create(['nom' => 'Goodies', 'description' => 'Produits dérivés et goodies']);
+        $catPlats = Categorie::create(['nom' => 'Plats', 'description' => 'Plats principaux']);
+        $catBoissons = Categorie::create(['nom' => 'Boissons', 'description' => 'Boissons fraîches et chaudes']);
+        $catIngredients = Categorie::create(['nom' => 'Ingrédients', 'description' => 'Ingrédients de cuisine (Stock)']);
+        $catMenus = Categorie::create(['nom' => 'Menus & Packs', 'description' => 'Menus complets']);
 
         // ---------------------------------------------------
-        // 1. CRÉATION DES ATTRIBUTS ET VALEURS
+        // 1. CRÉATION DES INGRÉDIENTS (Cachés du POS)
         // ---------------------------------------------------
-
-        $couleur = Attribut::create(['nom_attribut' => 'Couleur']);
-        $valCouleurRouge = ValeurAttribut::create(['id_attribut' => $couleur->id_attribut, 'nom_valeur' => 'Rouge']);
-        $valCouleurBleu  = ValeurAttribut::create(['id_attribut' => $couleur->id_attribut, 'nom_valeur' => 'Bleu']);
-        $valCouleurNoir  = ValeurAttribut::create(['id_attribut' => $couleur->id_attribut, 'nom_valeur' => 'Noir']);
-        $valCouleurGris  = ValeurAttribut::create(['id_attribut' => $couleur->id_attribut, 'nom_valeur' => 'Gris']);
-
-        $taille = Attribut::create(['nom_attribut' => 'Taille']);
-        $valTailleS  = ValeurAttribut::create(['id_attribut' => $taille->id_attribut, 'nom_valeur' => 'S']);
-        $valTailleM  = ValeurAttribut::create(['id_attribut' => $taille->id_attribut, 'nom_valeur' => 'M']);
-        $valTailleL  = ValeurAttribut::create(['id_attribut' => $taille->id_attribut, 'nom_valeur' => 'L']);
-        $valTailleXL = ValeurAttribut::create(['id_attribut' => $taille->id_attribut, 'nom_valeur' => 'XL']);
-
-        // ---------------------------------------------------
-        // 2. PRODUITS EXISTANTS (T-Shirt & Mug)
-        // ---------------------------------------------------
-
-        $tshirt = ProduitModele::create(['name' => 'T-Shirt Coton Premium', 'prix_standard' => 15.00, 'id_categorie' => $catVetements->id_categorie]);
         
-        $varTsRougeM = ProduitVariante::create(['id_modele' => $tshirt->id_modele, 'reference_sku' => 'TSHIRT-RGE-M', 'stock_reel' => 10]);
-        $varTsRougeM->valeurs()->attach([$valCouleurRouge->id_valeur, $valTailleM->id_valeur]);
+        $poulet = ProduitModele::create(['name' => 'Poulet (kg)', 'prix_standard' => 15000, 'id_categorie' => $catIngredients->id_categorie, 'is_ingredient' => true]);
+        $varPoulet = ProduitVariante::create(['id_modele' => $poulet->id_modele, 'reference_sku' => 'ING-POULET', 'stock_reel' => 50]);
 
-        $varTsBleuL = ProduitVariante::create(['id_modele' => $tshirt->id_modele, 'reference_sku' => 'TSHIRT-BLU-L', 'stock_reel' => 5]);
-        $varTsBleuL->valeurs()->attach([$valCouleurBleu->id_valeur, $valTailleL->id_valeur]);
+        $riz = ProduitModele::create(['name' => 'Riz Blanc (kg)', 'prix_standard' => 3000, 'id_categorie' => $catIngredients->id_categorie, 'is_ingredient' => true]);
+        $varRiz = ProduitVariante::create(['id_modele' => $riz->id_modele, 'reference_sku' => 'ING-RIZ', 'stock_reel' => 100]);
 
-        $varTsNoirXL = ProduitVariante::create(['id_modele' => $tshirt->id_modele, 'reference_sku' => 'TSHIRT-NOI-XL', 'stock_reel' => 2, 'surcout_prix' => 2.50]);
-        $varTsNoirXL->valeurs()->attach([$valCouleurNoir->id_valeur, $valTailleXL->id_valeur]);
-
-        $mug = ProduitModele::create(['name' => 'Mug ERP', 'prix_standard' => 8.00, 'id_categorie' => $catGoodies->id_categorie]);
-        $varMug = ProduitVariante::create(['id_modele' => $mug->id_modele, 'reference_sku' => 'MUG-STANDARD', 'stock_reel' => 50]);
+        $frites = ProduitModele::create(['name' => 'Pomme de terre Frites (kg)', 'prix_standard' => 4500, 'id_categorie' => $catIngredients->id_categorie, 'is_ingredient' => true]);
+        $varFrites = ProduitVariante::create(['id_modele' => $frites->id_modele, 'reference_sku' => 'ING-FRITES', 'stock_reel' => 40]);
+        
+        $boeuf = ProduitModele::create(['name' => 'Viande de Boeuf (kg)', 'prix_standard' => 18000, 'id_categorie' => $catIngredients->id_categorie, 'is_ingredient' => true]);
+        $varBoeuf = ProduitVariante::create(['id_modele' => $boeuf->id_modele, 'reference_sku' => 'ING-BOEUF', 'stock_reel' => 30]);
 
         // ---------------------------------------------------
-        // 3. NOUVEAUX PRODUITS SIMPLES
+        // 2. PRODUITS SIMPLES (Boissons / Vente Directe)
         // ---------------------------------------------------
 
-        // A. Sweat à capuche
-        $sweat = ProduitModele::create(['name' => 'Sweat à capuche', 'prix_standard' => 35.00, 'id_categorie' => $catVetements->id_categorie]);
-        
-        $varSweatNoirM = ProduitVariante::create(['id_modele' => $sweat->id_modele, 'reference_sku' => 'SWEAT-NOI-M', 'stock_reel' => 15]);
-        $varSweatNoirM->valeurs()->attach([$valCouleurNoir->id_valeur, $valTailleM->id_valeur]);
-        
-        $varSweatGrisL = ProduitVariante::create(['id_modele' => $sweat->id_modele, 'reference_sku' => 'SWEAT-GRI-L', 'stock_reel' => 8]);
-        $varSweatGrisL->valeurs()->attach([$valCouleurGris->id_valeur, $valTailleL->id_valeur]);
+        // Demande Spécifique: Cocacola Mini 350ml
+        $coca = ProduitModele::create(['name' => 'Cocacola Mini 350ml', 'prix_standard' => 2000, 'id_categorie' => $catBoissons->id_categorie]);
+        $varCoca = ProduitVariante::create(['id_modele' => $coca->id_modele, 'reference_sku' => 'BOIS-COCA-350', 'stock_reel' => 120, 'code_barre' => '42117131']);
 
-        // B. Casquette Brodée
-        $casquette = ProduitModele::create(['name' => 'Casquette Brodée', 'prix_standard' => 12.00, 'id_categorie' => $catAccessoires->id_categorie]);
-        
-        $varCasqRouge = ProduitVariante::create(['id_modele' => $casquette->id_modele, 'reference_sku' => 'CASQ-RGE', 'stock_reel' => 30]);
-        $varCasqRouge->valeurs()->attach([$valCouleurRouge->id_valeur]);
-        
-        $varCasqNoir = ProduitVariante::create(['id_modele' => $casquette->id_modele, 'reference_sku' => 'CASQ-NOI', 'stock_reel' => 25]);
-        $varCasqNoir->valeurs()->attach([$valCouleurNoir->id_valeur]);
+        // Demande Spécifique: Eau vive GM 1,5L
+        $eau = ProduitModele::create(['name' => 'Eau vive GM 1,5L', 'prix_standard' => 3000, 'id_categorie' => $catBoissons->id_categorie]);
+        $varEau = ProduitVariante::create(['id_modele' => $eau->id_modele, 'reference_sku' => 'BOIS-EAU-15', 'stock_reel' => 200, 'code_barre' => '9501046019205']);
 
-        // C. Tapis de souris XL
-        $tapis = ProduitModele::create(['name' => 'Tapis de souris XXL', 'prix_standard' => 20.00, 'id_categorie' => $catAccessoires->id_categorie]);
-        $varTapis = ProduitVariante::create(['id_modele' => $tapis->id_modele, 'reference_sku' => 'TAPIS-XXL', 'stock_reel' => 40]);
+        // Demande Spécifique: Lait Austria 1L
+        $lait = ProduitModele::create(['name' => 'Lait Austria 1L', 'prix_standard' => 4500, 'id_categorie' => $catBoissons->id_categorie]);
+        $varLait = ProduitVariante::create(['id_modele' => $lait->id_modele, 'reference_sku' => 'BOIS-LAIT-1L', 'stock_reel' => 60, 'code_barre' => '8410297600012']);
 
-        // D. Gourde Isotherme
-        $gourde = ProduitModele::create(['name' => 'Gourde Isotherme 1L', 'prix_standard' => 18.00, 'id_categorie' => $catAccessoires->id_categorie]);
-        $varGourdeBleu = ProduitVariante::create(['id_modele' => $gourde->id_modele, 'reference_sku' => 'GOURDE-BLU', 'stock_reel' => 12]);
-        $varGourdeBleu->valeurs()->attach([$valCouleurBleu->id_valeur]);
+        $jus = ProduitModele::create(['name' => 'Jus Naturel (Verre)', 'prix_standard' => 2500, 'id_categorie' => $catBoissons->id_categorie]);
+        $varJus = ProduitVariante::create(['id_modele' => $jus->id_modele, 'reference_sku' => 'BOIS-JUS-NAT', 'stock_reel' => 45]);
 
         // ---------------------------------------------------
-        // 4. CRÉATION DES PACKS (Nomenclatures)
+        // 3. CRÉATION DES PACKS (Assiettes et Menus basés sur IP)
         // ---------------------------------------------------
 
-        // PACK 1 : Pack Développeur (Déjà vu)
-        $packDev = ProduitModele::create(['name' => 'Pack Développeur', 'prix_standard' => 22.00, 'id_categorie' => $catGoodies->id_categorie]);
-        $varPackDev = ProduitVariante::create(['id_modele' => $packDev->id_modele, 'reference_sku' => 'PACK-DEV', 'stock_reel' => 0, 'est_pack' => true]);
-        $varPackDev->composants()->attach([
-            $varTsNoirXL->id_variante => ['quantite' => 1],
-            $varMug->id_variante => ['quantite' => 1],
+        // A. Plat: Poulet Rôti + Riz
+        $platPouletRiz = ProduitModele::create(['name' => 'Plat: Poulet Gasy & Riz', 'prix_standard' => 12000, 'id_categorie' => $catPlats->id_categorie]);
+        $varPlatPouletRiz = ProduitVariante::create(['id_modele' => $platPouletRiz->id_modele, 'reference_sku' => 'PLAT-POULETRIZ', 'stock_reel' => 0, 'est_pack' => true]);
+        $varPlatPouletRiz->composants()->attach([
+            $varPoulet->id_variante => ['quantite' => 0.25], // 250g de poulet
+            $varRiz->id_variante => ['quantite' => 0.3],    // 300g de riz
         ]);
 
-        // PACK 2 : Pack Télétravail (Sweat Noir M + Tapis XXL + Mug)
-        $packTele = ProduitModele::create(['name' => 'Pack Télétravail Confort', 'prix_standard' => 55.00, 'id_categorie' => $catAccessoires->id_categorie]);
-        $varPackTele = ProduitVariante::create(['id_modele' => $packTele->id_modele, 'reference_sku' => 'PACK-TELETRAVAIL', 'stock_reel' => 0, 'est_pack' => true]);
-        $varPackTele->composants()->attach([
-            $varSweatNoirM->id_variante => ['quantite' => 1], // Stock réel: 15
-            $varTapis->id_variante => ['quantite' => 1],      // Stock réel: 40
-            $varMug->id_variante => ['quantite' => 1],        // Stock réel: 50
+        // B. Plat: Steak Frites
+        $platSteakFrites = ProduitModele::create(['name' => 'Plat: Steak de Boeuf & Frites', 'prix_standard' => 15000, 'id_categorie' => $catPlats->id_categorie]);
+        $varPlatSteakFrites = ProduitVariante::create(['id_modele' => $platSteakFrites->id_modele, 'reference_sku' => 'PLAT-STEAKFRITES', 'stock_reel' => 0, 'est_pack' => true]);
+        $varPlatSteakFrites->composants()->attach([
+            $varBoeuf->id_variante => ['quantite' => 0.2],  // 200g de boeuf
+            $varFrites->id_variante => ['quantite' => 0.25], // 250g de frites
         ]);
-        // -> Le stock dispo de ce pack devrait être de 15 !
-
-        // PACK 3 : Pack Été (T-Shirt Bleu L + Casquette Rouge + Gourde Bleu)
-        $packEte = ProduitModele::create(['name' => 'Pack Été', 'prix_standard' => 40.00, 'id_categorie' => $catVetements->id_categorie]);
-        $varPackEte = ProduitVariante::create(['id_modele' => $packEte->id_modele, 'reference_sku' => 'PACK-ETE', 'stock_reel' => 0, 'est_pack' => true]);
-        $varPackEte->composants()->attach([
-            $varTsBleuL->id_variante => ['quantite' => 1],    // Stock réel: 5
-            $varCasqRouge->id_variante => ['quantite' => 1],  // Stock réel: 30
-            $varGourdeBleu->id_variante => ['quantite' => 1], // Stock réel: 12
+        
+        // C. Menu Complet (Plat Steak Frites + Coca Mini)
+        $menuComplet = ProduitModele::create(['name' => 'Menu: Steak Frites + Coca', 'prix_standard' => 16000, 'id_categorie' => $catMenus->id_categorie]);
+        $varMenuComplet = ProduitVariante::create(['id_modele' => $menuComplet->id_modele, 'reference_sku' => 'MENU-STK-COCA', 'stock_reel' => 0, 'est_pack' => true]);
+        $varMenuComplet->composants()->attach([
+            $varBoeuf->id_variante => ['quantite' => 0.2],  // L'ingrédient directement pour éviter chainage complexe
+            $varFrites->id_variante => ['quantite' => 0.25], 
+            $varCoca->id_variante => ['quantite' => 1],     // Le produit simple boisson
         ]);
-        // -> Le stock dispo de ce pack devrait être de 5 !
     }
 }

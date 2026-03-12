@@ -3,29 +3,32 @@
 namespace Database\Seeders;
 
 use App\Models\Client;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class ClientSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         Client::create([
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
+            'name' => 'Client Comptoir (Passager)',
+            'email' => null,
             'type_client' => 'particulier',
         ]);
 
         Client::create([
-            'name' => 'SARL MonEntreprise',
-            'email' => 'contact@entreprise.com',
+            'name' => 'BBO Madagascar (Déjeuner Équipe)',
+            'email' => 'contact@bbo-mada.mg',
             'type_client' => 'entreprise',
-            'nif' => '123456789',
-            'stat' => '987654321',
+            'nif' => '4001234567',
+            'stat' => '620111120150',
             'rcs_ville' => 'Antananarivo'
+        ]);
+
+        Client::create([
+            'name' => 'Jean-Luc Rabemananjara',
+            'email' => 'jeanluc.rabe@gmail.com',
+            'type_client' => 'particulier',
+            'telephone' => '034 00 123 45'
         ]);
     }
 }
