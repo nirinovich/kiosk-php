@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Package, Plus, Trash2 } from 'lucide-react';
+import { Package, Plus, Trash2, ScanBarcode } from 'lucide-react';
 import { Check, ChevronsUpDown, Search } from "lucide-react"
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { BarcodeScanner } from '@/components/barcode-scanner';
 
 interface Valeur {
     id_valeur: number;
@@ -93,6 +94,7 @@ function getUnitLabel(unit?: string): string {
 
 export function VariantCard({ index, variante, attributs, availableVariantes = [], categories = [], isPackMode = false, onUpdate, onDelete, onToggleValeur, onAddCustomAttr, onIngredientCreated }: Props) {
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [scannerOpen, setScannerOpen] = useState(false);
     const [newIngredientName, setNewIngredientName] = useState('');
     const [newIngredientPrice, setNewIngredientPrice] = useState('0');
     const [newIngredientStock, setNewIngredientStock] = useState('0');
@@ -216,11 +218,30 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                         </div>
                         <div className="flex-1">
                             <Label className="text-xs">Code-barres</Label>
-                            <Input
-                                placeholder="Scanner ou taper..."
-                                value={variante.code_barre || ''}
-                                onChange={(e) => onUpdate(index, 'code_barre', e.target.value)}
-                                className="mt-1"
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="Scanner ou taper..."
+                                    value={variante.code_barre || ''}
+                                    onChange={(e) => onUpdate(index, 'code_barre', e.target.value)}
+                                    className="mt-1 flex-1"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="shrink-0 h-10 w-10 mt-1 border-primary/30 text-primary hover:bg-primary/10"
+                                    onClick={() => setScannerOpen(true)}
+                                >
+                                    <ScanBarcode className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <BarcodeScanner
+                                open={scannerOpen}
+                                onClose={() => setScannerOpen(false)}
+                                onScan={(code) => {
+                                    onUpdate(index, 'code_barre', code);
+                                    setScannerOpen(false);
+                                }}
                             />
                         </div>
                     </div>

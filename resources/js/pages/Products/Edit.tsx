@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { PlusIcon, Package, Layers, PackagePlus, Tags } from 'lucide-react';
+import { PlusIcon, Package, Layers, PackagePlus, Tags, ScanBarcode } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { CategoryCombobox } from '@/components/category-combobox';
 import { FormErrors } from '@/components/form-errors';
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { VariantCard, type VarianteFormData } from '@/components/variant-card';
+import { BarcodeScanner } from '@/components/barcode-scanner';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import products from '@/routes/products';
@@ -68,6 +69,7 @@ interface Props {
 
 export default function Edit({ produit_modele, attributs, categories: initialCategories, isSimpleProduct, currentStock, availableVariantes }: Props) {
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
+    const [scannerOpen, setScannerOpen] = useState(false);
     const [variantesDispo, setVariantesDispo] = useState<VarianteFormData[]>(availableVariantes || []);
     const [savedCategoryBeforeIngredient, setSavedCategoryBeforeIngredient] = useState<number | string>(produit_modele.id_categorie || '');
 
@@ -390,25 +392,34 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                 {/* Simple mode */}
                                 {productType === 'simple' && data.variantes.length > 0 && (
                                     <div className="rounded-lg bg-muted/30 p-4 border border-border/50 space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <Label className="text-xs">Référence (SKU)</Label>
-                                                <Input
-                                                    placeholder="REF-UNIQUE"
-                                                    value={data.variantes[0].sku || ''}
-                                                    onChange={(e) => updateVariante(0, 'sku', e.target.value)}
-                                                    className="mt-1 bg-background"
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label className="text-xs">Code-barres</Label>
+                                        <div className="max-w-md">
+                                            <Label className="text-xs">Code-barres</Label>
+                                            <div className="flex gap-2">
                                                 <Input
                                                     placeholder="Scanner ou taper..."
                                                     value={data.variantes[0].code_barre || ''}
                                                     onChange={(e) => updateVariante(0, 'code_barre', e.target.value)}
-                                                    className="mt-1 bg-background"
+                                                    className="mt-1 bg-background flex-1"
                                                 />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="mt-1 h-10 w-10 shrink-0 border-primary/30 text-primary hover:bg-primary/10"
+                                                    onClick={() => setScannerOpen(true)}
+                                                    title="Scanner un code-barres"
+                                                >
+                                                    <ScanBarcode className="h-5 w-5" />
+                                                </Button>
                                             </div>
+                                            <BarcodeScanner
+                                                open={scannerOpen}
+                                                onClose={() => setScannerOpen(false)}
+                                                onScan={(code) => {
+                                                    updateVariante(0, 'code_barre', code);
+                                                    setScannerOpen(false);
+                                                }}
+                                            />
                                         </div>
 
                                         <div>
