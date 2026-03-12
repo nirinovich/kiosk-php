@@ -1,5 +1,6 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
+import { echo, echoIsConfigured } from '@laravel/echo-react';
 import {
     Search,
     Plus,
@@ -161,9 +162,12 @@ export default function PosIndex() {
             if (existing >= 0) {
                 return prev.map((l, i) =>
                     i === existing
-                        ? { ...l, quantite: Math.min(l.quantite + 1, l.stock) }
+                        ? { ...l, quantite: Math.min(l.quantite + 1, Math.max(1, l.stock)) }
                         : l
                 );
+            }
+            if (product.stock <= 0) {
+                return prev;
             }
             return [
                 ...prev,
@@ -192,6 +196,11 @@ export default function PosIndex() {
         );
 
         if (matchedProduct) {
+            const inOrder = orderLines.find((l) => l.id_variante === matchedProduct.id_variante);
+            if (matchedProduct.stock <= 0 || (inOrder && inOrder.quantite >= matchedProduct.stock)) {
+                setScanToast({ type: 'not_found', message: `Stock dépassé pour ${matchedProduct.nom}`, code: barcode });
+                return;
+            }
             addProduct(matchedProduct);
             setScanToast({ type: 'success', message: matchedProduct.nom, code: barcode });
             return;
@@ -203,8 +212,14 @@ export default function PosIndex() {
             const data = response.data;
 
             if (data.found && data.produit) {
-                addProduct(data.produit);
-                setScanToast({ type: 'success', message: data.produit.nom, code: barcode });
+                const p = data.produit;
+                const inOrder = orderLines.find((l) => l.id_variante === p.id_variante);
+                if (p.stock <= 0 || (inOrder && inOrder.quantite >= p.stock)) {
+                    setScanToast({ type: 'not_found', message: `Stock dépassé pour ${p.nom}`, code: barcode });
+                    return;
+                }
+                addProduct(p);
+                setScanToast({ type: 'success', message: p.nom, code: barcode });
             } else {
                 setScanToast({
                     type: 'not_found',
@@ -219,26 +234,29 @@ export default function PosIndex() {
                 code: barcode,
             });
         }
-    }, [produits, addProduct]);
+    }, [produits, orderLines, addProduct]);
 
     // ── Remote scanner listener (WebSockets) ──
     useEffect(() => {
         const userId = auth?.user?.id;
-        // @ts-ignore
-        if (userId && window.Echo) {
-            // @ts-ignore
-            const channel = window.Echo.private(`user.${userId}`);
-            
-            channel.listen('BarcodeScanned', (e: any) => {
-                if (e.barcode) {
-                    console.log('Remote scan received:', e.barcode);
-                    handleBarcodeScan(e.barcode, true);
-                }
-            });
+        try {
+            if (userId && echoIsConfigured()) {
+                const instance = echo();
+                const channel = instance.private(`user.${userId}`);
+                
+                channel.listen('BarcodeScanned', (e: any) => {
+                    if (e.barcode) {
+                        console.log('Remote scan received:', e.barcode);
+                        handleBarcodeScan(e.barcode, true);
+                    }
+                });
 
-            return () => {
-                channel.stopListening('BarcodeScanned');
-            };
+                return () => {
+                    channel.stopListening('BarcodeScanned');
+                };
+            }
+        } catch (error) {
+            console.error('Echo configuration error:', error);
         }
     }, [handleBarcodeScan, auth?.user?.id]);
 
@@ -714,7 +732,7 @@ export default function PosIndex() {
                                             key={product.id_variante}
                                             type="button"
                                             onClick={() => addProduct(product)}
-                                            disabled={inOrder ? inOrder.quantite >= product.stock : false}
+                                            disabled={product.stock <= 0 || (inOrder ? inOrder.quantite >= product.stock : false)}
                                             className={`group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-md hover:border-primary/40 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
                                                 inOrder ? 'ring-2 ring-primary/40' : ''
                                             }`}
