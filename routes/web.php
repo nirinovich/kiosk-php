@@ -50,9 +50,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::post('/products/quick-ingredient', [ProductController::class, 'quickCreateIngredient'])->name('products.quick_ingredient');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
-    Route::get('/products/{produit_modele}/edit', [ProductController::class, 'edit'])->name('products.edit');
-    Route::put('/products/{produit_modele}', [ProductController::class, 'update'])->name('products.update');
-    Route::delete('/products/{produit_modele}', [ProductController::class, 'destroy'])->name('products.destroy');
+    Route::get('/products/{produit_modele}/edit', [ProductController::class, 'edit'])->name('products.edit')->middleware('can:update,produit_modele');
+    Route::put('/products/{produit_modele}', [ProductController::class, 'update'])->name('products.update')->middleware('can:update,produit_modele');
+    Route::delete('/products/{produit_modele}', [ProductController::class, 'destroy'])->name('products.destroy')->middleware('can:delete,produit_modele');
 
     // Catégories
     Route::get('/categories', [CategorieController::class, 'index'])->name('categories.index');
