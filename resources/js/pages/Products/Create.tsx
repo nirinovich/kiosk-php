@@ -15,6 +15,7 @@ import { VariantCard, type VarianteFormData } from '@/components/variant-card';
 import { FormErrors } from '@/components/form-errors';
 import { ImageUpload } from '@/components/image-upload';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: dashboard().url },
@@ -59,8 +60,6 @@ interface FormState {
 
 export default function Create({ attributs, categories: initialCategories, availableVariantes }: Props) {
 
-    console.log("Ce que Laravel envoie :", availableVariantes);
-
     // Support initial type from URL
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
     const initialTypeParam = searchParams.get('type');
@@ -68,6 +67,10 @@ export default function Create({ attributs, categories: initialCategories, avail
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
     const [variantesDispo, setVariantesDispo] = useState<VarianteFormData[]>(availableVariantes || []);
     const [productType, setProductType] = useState<'simple' | 'variable' | 'pack'>(initialTypeParam === 'pack' ? 'pack' : 'simple');
+    const [savedCategoryBeforeIngredient, setSavedCategoryBeforeIngredient] = useState<number | string>('');
+
+    // Find the "Ingrédients" category
+    const ingredientCategory = categories.find(c => c.nom === 'Ingrédients');
 
     // Create a robust empty variant template
     const emptyVariant: VarianteFormData = {
@@ -262,12 +265,23 @@ export default function Create({ attributs, categories: initialCategories, avail
                                         )}
                                     </div>
                                     <div>
-                                        <CategoryCombobox
-                                            categories={categories}
-                                            value={data.id_categorie}
-                                            onChange={(v) => setData('id_categorie', v)}
-                                            onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
-                                        />
+                                        {data.is_ingredient ? (
+                                            <>
+                                                <Label>Catégorie</Label>
+                                                <Input
+                                                    value="Ingrédients"
+                                                    disabled
+                                                    className="mt-1 bg-muted"
+                                                />
+                                            </>
+                                        ) : (
+                                            <CategoryCombobox
+                                                categories={categories}
+                                                value={data.id_categorie}
+                                                onChange={(v) => setData('id_categorie', v)}
+                                                onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                                            />
+                                        )}
                                     </div>
                                     <div>
                                         <Label htmlFor="unite_mesure">Unité de mesure *</Label>
@@ -286,13 +300,19 @@ export default function Create({ attributs, categories: initialCategories, avail
                                     </div>
                                     
                                     {productType === 'simple' && (
-                                        <div className="flex items-center space-x-2 pt-8">
-                                            <input
-                                                type="checkbox"
+                                        <div className="flex items-center space-x-3 pt-8">
+                                            <Switch
                                                 id="is_ingredient"
                                                 checked={data.is_ingredient}
-                                                onChange={(e) => setData('is_ingredient', e.target.checked)}
-                                                className="h-4 w-4 rounded border-primary/50 text-primary focus:ring-primary"
+                                                onCheckedChange={(checked) => {
+                                                    setData('is_ingredient', checked);
+                                                    if (checked && ingredientCategory) {
+                                                        setSavedCategoryBeforeIngredient(data.id_categorie);
+                                                        setData('id_categorie', ingredientCategory.id_categorie);
+                                                    } else if (!checked) {
+                                                        setData('id_categorie', savedCategoryBeforeIngredient);
+                                                    }
+                                                }}
                                             />
                                             <Label htmlFor="is_ingredient" className="flex items-center gap-2 cursor-pointer text-sm font-medium">
                                                 C'est un ingrédient
@@ -334,8 +354,8 @@ export default function Create({ attributs, categories: initialCategories, avail
                                 {productType === 'simple' && (
                                     <div className="rounded-lg bg-muted/30 p-4 border border-border/50">
                                         <div className="mb-4">
-                                            <p className="text-sm font-medium">Stock unique</p>
-                                            <p className="text-xs text-muted-foreground">Définissez le nombre d'articles que vous avez actuellement en réserve.</p>
+                                            <p className="text-sm font-medium">Stock initial</p>
+                                            <p className="text-xs text-muted-foreground">Définissez la quantité initiale en stock pour ce nouveau produit.</p>
                                         </div>
                                         <Label htmlFor="stock_initial">Quantité en stock</Label>
                                         <Input
@@ -346,10 +366,8 @@ export default function Create({ attributs, categories: initialCategories, avail
                                             placeholder="0"
                                             value={data.stock_initial}
                                             onChange={(e) => setData('stock_initial', Number(e.target.value))}
-                                            className="mt-1 max-w-xs bg-muted"
-                                            disabled
+                                            className="mt-1 max-w-xs bg-background"
                                         />
-                                        <p className="text-xs text-muted-foreground mt-2">Le stock doit être géré depuis la section Stock après création.</p>
                                     </div>
                                 )}
 

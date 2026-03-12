@@ -137,14 +137,23 @@ class ProductController extends Controller
         }
 
         DB::transaction(function () use ($validated, $request, $imagePath) {
+            $isIngredient = $validated['is_ingredient'] ?? false;
+            $categoryId = $validated['id_categorie'];
+
+            // Auto-assign "Ingrédients" category when is_ingredient is true
+            if ($isIngredient) {
+                $ingredientCat = Categorie::firstOrCreate(['nom' => 'Ingrédients']);
+                $categoryId = $ingredientCat->id_categorie;
+            }
+
             $produit = ProduitModele::create([
                 'name' => $validated['name'],
                 'prix_standard' => $validated['prix_standard'],
                 'description' => $validated['description'],
                 'image_url' => $imagePath,
-                'id_categorie' => $validated['id_categorie'],
+                'id_categorie' => $categoryId,
                 'unite_mesure' => $validated['unite_mesure'],
-                'is_ingredient' => $validated['is_ingredient'] ?? false,
+                'is_ingredient' => $isIngredient,
             ]);
             if (empty($validated['variantes'])) {
                 // Pas de variantes explicites : on crée une variante par défaut pour gérer le stock
@@ -287,14 +296,23 @@ class ProductController extends Controller
                 $imageUrl = 'images/' . $imageName;
             }
 
+            $isIngredient = $request->boolean('is_ingredient', false);
+            $categoryId = $request->input('id_categorie');
+
+            // Auto-assign "Ingrédients" category when is_ingredient is true
+            if ($isIngredient) {
+                $ingredientCat = Categorie::firstOrCreate(['nom' => 'Ingrédients']);
+                $categoryId = $ingredientCat->id_categorie;
+            }
+
             $produit_modele->update([
                 'name' => $request->input('name'),
                 'prix_standard' => $request->input('prix_standard'),
                 'description' => $request->input('description'),
                 'image_url' => $imageUrl,
-                'id_categorie' => $request->input('id_categorie'),
+                'id_categorie' => $categoryId,
                 'unite_mesure' => $request->input('unite_mesure'),
-                'is_ingredient' => $request->boolean('is_ingredient', false),
+                'is_ingredient' => $isIngredient,
             ]);
 
             $isSimple = $request->boolean('is_simple', false);

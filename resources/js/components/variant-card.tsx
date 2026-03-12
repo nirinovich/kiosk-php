@@ -80,6 +80,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+function getUnitLabel(unit?: string): string {
+    switch (unit) {
+        case 'unité': return 'unité(s)';
+        case 'kg': return 'kg';
+        case 'gramme': return 'g';
+        case 'litre': return 'L';
+        default: return '';
+    }
+}
+
 export function VariantCard({ index, variante, attributs, availableVariantes = [], categories = [], isPackMode = false, onUpdate, onDelete, onToggleValeur, onAddCustomAttr, onIngredientCreated }: Props) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [newIngredientName, setNewIngredientName] = useState('');
@@ -315,6 +325,11 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                                             className="w-24 h-9"
                                             required
                                         />
+                                        {selectedVariante?.unite_mesure && (
+                                            <span className="text-xs text-muted-foreground whitespace-nowrap min-w-[40px]">
+                                                {getUnitLabel(selectedVariante.unite_mesure)}
+                                            </span>
+                                        )}
                                         <Button 
                                             type="button" 
                                             variant="ghost" 

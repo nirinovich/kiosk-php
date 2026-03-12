@@ -15,6 +15,7 @@ import { VariantCard, type VarianteFormData } from '@/components/variant-card';
 import { FormErrors } from '@/components/form-errors';
 import { ImageUpload } from '@/components/image-upload';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 interface Valeur {
     id_valeur: number;
@@ -67,6 +68,10 @@ interface Props {
 export default function Edit({ produit_modele, attributs, categories: initialCategories, isSimpleProduct, currentStock, availableVariantes }: Props) {
     const [categories, setCategories] = useState<Categorie[]>(initialCategories);
     const [variantesDispo, setVariantesDispo] = useState<VarianteFormData[]>(availableVariantes || []);
+    const [savedCategoryBeforeIngredient, setSavedCategoryBeforeIngredient] = useState<number | string>(produit_modele.id_categorie || '');
+
+    // Find the "Ingrédients" category
+    const ingredientCategory = categories.find(c => c.nom === 'Ingrédients');
 
     // Determine initial type based on DB data
     const isPackOnly = !isSimpleProduct && produit_modele.variantes?.length === 1 && produit_modele.variantes[0].est_pack;
@@ -274,12 +279,23 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                         )}
                                     </div>
                                     <div>
-                                        <CategoryCombobox
-                                            categories={categories}
-                                            value={data.id_categorie}
-                                            onChange={(v) => setData('id_categorie', v)}
-                                            onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
-                                        />
+                                        {data.is_ingredient ? (
+                                            <>
+                                                <Label>Catégorie</Label>
+                                                <Input
+                                                    value="Ingrédients"
+                                                    disabled
+                                                    className="mt-1 bg-muted"
+                                                />
+                                            </>
+                                        ) : (
+                                            <CategoryCombobox
+                                                categories={categories}
+                                                value={data.id_categorie}
+                                                onChange={(v) => setData('id_categorie', v)}
+                                                onCategoryCreated={(cat) => setCategories((prev) => [...prev, cat])}
+                                            />
+                                        )}
                                     </div>
                                     <div>
                                         <Label htmlFor="unite_mesure">Unité de mesure *</Label>
@@ -298,13 +314,19 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                     </div>
                                     
                                     {productType === 'simple' && (
-                                        <div className="flex items-center space-x-2 pt-8">
-                                            <input
-                                                type="checkbox"
+                                        <div className="flex items-center space-x-3 pt-8">
+                                            <Switch
                                                 id="is_ingredient"
                                                 checked={data.is_ingredient}
-                                                onChange={(e) => setData('is_ingredient', e.target.checked)}
-                                                className="h-4 w-4 rounded border-primary/50 text-primary focus:ring-primary"
+                                                onCheckedChange={(checked) => {
+                                                    setData('is_ingredient', checked);
+                                                    if (checked && ingredientCategory) {
+                                                        setSavedCategoryBeforeIngredient(data.id_categorie);
+                                                        setData('id_categorie', ingredientCategory.id_categorie);
+                                                    } else if (!checked) {
+                                                        setData('id_categorie', savedCategoryBeforeIngredient);
+                                                    }
+                                                }}
                                             />
                                             <Label htmlFor="is_ingredient" className="flex items-center gap-2 cursor-pointer text-sm font-medium">
                                                 C'est un ingrédient
