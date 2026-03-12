@@ -53,6 +53,7 @@ interface FormState {
     image_url: File | null;
     id_categorie: number | string;
     unite_mesure: string;
+    is_ingredient: boolean;
     variantes: VarianteFormData[];
 }
 
@@ -93,6 +94,7 @@ export default function Create({ attributs, categories: initialCategories, avail
         image_url: null,
         id_categorie: '',
         unite_mesure: 'unité',
+        is_ingredient: false,
         // Initialize based on URL param
         variantes: initialTypeParam === 'pack' ? [emptyPack] : [],
     });
@@ -104,11 +106,14 @@ export default function Create({ attributs, categories: initialCategories, avail
         if (type === 'simple') {
             setData('variantes', []);
         } else if (type === 'variable') {
+            setData('is_ingredient', false); // Variable products cannot be ingredients
             // If we already have variants (and not just a pack), keep them. Otherwise set one empty variant
             if (data.variantes.length === 0 || data.variantes[0].est_pack) {
                 setData('variantes', [{ ...emptyVariant }]);
             }
         } else if (type === 'pack') {
+            setData('is_ingredient', false); // Packs cannot be ingredients
+            setData('unite_mesure', 'unité'); // Packs must use unité
             // Force the first variant to be a pack
             if (data.variantes.length === 0) {
                 setData('variantes', [{ ...emptyPack }]);
@@ -279,6 +284,21 @@ export default function Create({ attributs, categories: initialCategories, avail
                                         </Select>
                                         {errors.unite_mesure && <p className="text-xs text-destructive mt-1">{errors.unite_mesure}</p>}
                                     </div>
+                                    
+                                    {productType === 'simple' && (
+                                        <div className="flex items-center space-x-2 pt-8">
+                                            <input
+                                                type="checkbox"
+                                                id="is_ingredient"
+                                                checked={data.is_ingredient}
+                                                onChange={(e) => setData('is_ingredient', e.target.checked)}
+                                                className="h-4 w-4 rounded border-primary/50 text-primary focus:ring-primary"
+                                            />
+                                            <Label htmlFor="is_ingredient" className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                                                C'est un ingrédient
+                                            </Label>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>
@@ -326,8 +346,10 @@ export default function Create({ attributs, categories: initialCategories, avail
                                             placeholder="0"
                                             value={data.stock_initial}
                                             onChange={(e) => setData('stock_initial', Number(e.target.value))}
-                                            className="mt-1 max-w-xs bg-background"
+                                            className="mt-1 max-w-xs bg-muted"
+                                            disabled
                                         />
+                                        <p className="text-xs text-muted-foreground mt-2">Le stock doit être géré depuis la section Stock après création.</p>
                                     </div>
                                 )}
 

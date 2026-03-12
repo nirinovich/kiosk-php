@@ -11,7 +11,11 @@ class ProduitModele extends Model
     protected $table = 'produit_modeles';
     protected $primaryKey = 'id_modele';
 
-    protected $fillable = ['name', 'prix_standard', 'description', 'image_url', 'id_categorie', 'unite_mesure'];
+    protected $fillable = ['name', 'prix_standard', 'description', 'image_url', 'id_categorie', 'unite_mesure', 'is_ingredient'];
+
+    protected $casts = [
+        'is_ingredient' => 'boolean',
+    ];
 
     public function variantes()
     {

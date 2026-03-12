@@ -56,7 +56,8 @@ class ProductController extends Controller
                 $sku = $v->reference_sku ? " - {$v->reference_sku}" : " (Simple)";
                 return [
                     'id_variante' => $v->id_variante,
-                    'sku' => $name . $sku
+                    'sku' => $name . $sku,
+                    'unite_mesure' => $v->modele ? $v->modele->unite_mesure : 'unité'
                 ];
             });
     }
@@ -117,6 +118,7 @@ class ProductController extends Controller
             'variantes.*.stock_reel' => 'nullable|integer|min:0',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
             'unite_mesure' => 'required|in:unité,litre,kg,gramme',
+            'is_ingredient' => 'nullable|boolean',
 
             'variantes.*.est_pack' => 'nullable|boolean',
             'variantes.*.composants' => 'nullable|array',
@@ -142,6 +144,7 @@ class ProductController extends Controller
                 'image_url' => $imagePath,
                 'id_categorie' => $validated['id_categorie'],
                 'unite_mesure' => $validated['unite_mesure'],
+                'is_ingredient' => $validated['is_ingredient'] ?? false,
             ]);
             if (empty($validated['variantes'])) {
                 // Pas de variantes explicites : on crée une variante par défaut pour gérer le stock
@@ -237,6 +240,7 @@ class ProductController extends Controller
             'remove_image' => 'nullable|boolean',
             'id_categorie' => 'nullable|exists:categories,id_categorie',
             'unite_mesure' => 'required|in:unité,litre,kg,gramme',
+            'is_ingredient' => 'nullable|boolean',
             'is_simple' => 'boolean',
             'stock_initial' => 'nullable|integer|min:0',
 
@@ -290,6 +294,7 @@ class ProductController extends Controller
                 'image_url' => $imageUrl,
                 'id_categorie' => $request->input('id_categorie'),
                 'unite_mesure' => $request->input('unite_mesure'),
+                'is_ingredient' => $request->boolean('is_ingredient', false),
             ]);
 
             $isSimple = $request->boolean('is_simple', false);

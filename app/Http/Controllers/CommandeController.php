@@ -61,6 +61,9 @@ class CommandeController extends Controller
     public function create()
     {
         $variantes = ProduitVariante::with(['modele', 'composants'])
+            ->whereHas('modele', function ($q) {
+                $q->where('is_ingredient', false);
+            })
             ->get()
             ->map(function ($variante) {
                 return [

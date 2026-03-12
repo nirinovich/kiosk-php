@@ -46,6 +46,7 @@ export interface VarianteFormData {
     valeurs_ids: number[];
     valeurs_custom: { attribut: string; valeur: string }[];
     est_pack?:boolean;
+    unite_mesure?: string;
     composants?: ComposantFormData[];
 }
 
@@ -62,6 +63,22 @@ interface Props {
     onAddCustomAttr: (indexVariante: number, attribut: string, valeur: string) => void;
     onIngredientCreated?: (newIng: VarianteFormData) => void;
 }
+
+import { Check, ChevronsUpDown, Search } from "lucide-react"
+import { cn } from "@/lib/utils"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 export function VariantCard({ index, variante, attributs, availableVariantes = [], categories = [], isPackMode = false, onUpdate, onDelete, onToggleValeur, onAddCustomAttr, onIngredientCreated }: Props) {
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -206,8 +223,10 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                             placeholder="0"
                             value={variante.stock_reel}
                             onChange={(e) => onUpdate(index, 'stock_reel', Number(e.target.value))}
-                            className="mt-1"
+                            className="mt-1 bg-muted"
+                            disabled
                         />
+                        <p className="text-[10px] text-muted-foreground mt-1">Géré via les stocks</p>
                     </div>
                     )}
                 </div>
@@ -235,27 +254,61 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                         <div className="space-y-3 pl-6 border-l-2 border-primary/30">
                             <Label className="text-xs text-muted-foreground">Contenu du pack</Label>
                             
-                            {(variante.composants || []).map((composant, cIndex) => (
+                            {(variante.composants || []).map((composant, cIndex) => {
+                                const selectedVariante = availableVariantes.find(v => v.id_variante == composant.id_variante);
+                                const isUnite = selectedVariante?.unite_mesure === 'unité';
+                                
+                                return (
                                 <div key={cIndex} className="flex flex-col sm:flex-row gap-2">
-                                    <select
-                                        value={composant.id_variante}
-                                        onChange={e => updateComposant(cIndex, 'id_variante', e.target.value)}
-                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 flex-1"
-                                        required
-                                    >
-                                        <option value="" disabled>-- Choisir un produit --</option>
-                                        {availableVariantes.map(v => (
-                                            <option key={v.id_variante} value={v.id_variante}>
-                                                {v.sku}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          role="combobox"
+                                          className="w-full sm:flex-1 justify-between bg-background"
+                                        >
+                                          {composant.id_variante
+                                            ? availableVariantes.find(
+                                                (v) => v.id_variante == composant.id_variante
+                                              )?.sku
+                                            : "-- Choisir un produit --"}
+                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-[300px] p-0">
+                                        <Command>
+                                          <CommandInput placeholder="Rechercher un produit..." />
+                                          <CommandList>
+                                            <CommandEmpty>Aucun produit trouvé.</CommandEmpty>
+                                            <CommandGroup>
+                                              {availableVariantes.map((v) => (
+                                                <CommandItem
+                                                  key={v.id_variante}
+                                                  value={v.sku}
+                                                  onSelect={() => {
+                                                    updateComposant(cIndex, 'id_variante', v.id_variante!);
+                                                  }}
+                                                >
+                                                  <Check
+                                                    className={cn(
+                                                      "mr-2 h-4 w-4",
+                                                      composant.id_variante == v.id_variante ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                  />
+                                                  {v.sku}
+                                                </CommandItem>
+                                              ))}
+                                            </CommandGroup>
+                                          </CommandList>
+                                        </Command>
+                                      </PopoverContent>
+                                    </Popover>
 
                                     <div className="flex items-center gap-2">
                                         <Input
                                             type="number"
-                                            step="0.001"
-                                            min="0.001"
+                                            step={isUnite ? "1" : (selectedVariante?.unite_mesure === 'gramme' ? "50" : "0.1")}
+                                            min={isUnite ? "1" : "0.001"}
                                             placeholder="Qté"
                                             value={composant.quantite}
                                             onChange={e => updateComposant(cIndex, 'quantite', e.target.value)}
@@ -273,7 +326,8 @@ export function VariantCard({ index, variante, attributs, availableVariantes = [
                                         </Button>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
 
                             <Button 
                                 type="button" 

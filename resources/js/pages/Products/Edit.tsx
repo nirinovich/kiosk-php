@@ -51,6 +51,7 @@ interface ProduitModele {
     image_url: string | null;
     id_categorie: number;
     unite_mesure: string;
+    is_ingredient: boolean;
     variantes: VarianteDepuisBDD[];
 }
 
@@ -101,6 +102,7 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
         remove_image: false,
         id_categorie: produit_modele.id_categorie || ('' as number | string),
         unite_mesure: produit_modele.unite_mesure || 'unité',
+        is_ingredient: produit_modele.is_ingredient || false,
         is_simple: isSimpleProduct,
         stock_initial: currentStock,
         variantes: initialVariantes,
@@ -118,21 +120,22 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
             setData((prev) => ({
                 ...prev,
                 is_simple: false,
+                is_ingredient: false, // Variable products cannot be ingredients
                 variantes: prev.variantes.length > 0 && !prev.variantes[0].est_pack
                     ? prev.variantes
-                    : [{ sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [] }]
+                    : [{ sku: '', surcout: 0, stock_reel: 0, valeurs_ids: [], valeurs_custom: [], est_pack: false, composants: [] }]
             }));
         } else if (type === 'pack') {
             setData((prev) => {
                 const variants = [...prev.variantes];
                 if (variants.length === 0) {
-                    return { ...prev, is_simple: false, variantes: [{ ...emptyPack }] };
+                    return { ...prev, is_simple: false, is_ingredient: false, unite_mesure: 'unité', variantes: [{ ...emptyPack }] };
                 } else {
                     variants[0] = { ...variants[0], est_pack: true };
                     if (!variants[0].composants || variants[0].composants.length < 2) {
                         variants[0].composants = [{ id_variante: '', quantite: 1 }, { id_variante: '', quantite: 1 }];
                     }
-                    return { ...prev, is_simple: false, variantes: variants };
+                    return { ...prev, is_simple: false, is_ingredient: false, unite_mesure: 'unité', variantes: variants };
                 }
             });
         }
@@ -293,6 +296,21 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                         </Select>
                                         {errors.unite_mesure && <p className="text-xs text-destructive mt-1">{errors.unite_mesure}</p>}
                                     </div>
+                                    
+                                    {productType === 'simple' && (
+                                        <div className="flex items-center space-x-2 pt-8">
+                                            <input
+                                                type="checkbox"
+                                                id="is_ingredient"
+                                                checked={data.is_ingredient}
+                                                onChange={(e) => setData('is_ingredient', e.target.checked)}
+                                                className="h-4 w-4 rounded border-primary/50 text-primary focus:ring-primary"
+                                            />
+                                            <Label htmlFor="is_ingredient" className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                                                C'est un ingrédient
+                                            </Label>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>
@@ -347,7 +365,9 @@ export default function Edit({ produit_modele, attributs, categories: initialCat
                                             value={data.stock_initial}
                                             onChange={(e) => setData('stock_initial', Number(e.target.value))}
                                             className="mt-1 max-w-xs bg-background"
+                                            disabled
                                         />
+                                        <p className="text-xs text-muted-foreground mt-2">Le stock doit être géré depuis la section Stock &gt; Ajustement ou Mouvements.</p>
                                     </div>
                                 )}
 

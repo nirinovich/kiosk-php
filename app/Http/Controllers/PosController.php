@@ -21,6 +21,7 @@ class PosController extends Controller
     public function index()
     {
         $produits = ProduitModele::with(['variantes.composants', 'categorie'])
+            ->where('is_ingredient', false)
             ->get()
             ->map(function ($modele) {
                 $variantesEnStock = $modele->variantes->filter(function ($v) {
