@@ -76,6 +76,7 @@ interface PageProps {
     categories: Category[];
     clients: ClientOption[];
     flash: { success?: string; message?: string };
+    auth: { user: { id: number } };
     [key: string]: unknown;
 }
 
@@ -89,7 +90,7 @@ const TVA_RATE = 20;
 // ─── Component ──────────────────────────────────────────────────────────────────
 
 export default function PosIndex() {
-    const { produits, categories, clients, flash } = usePage<PageProps>().props;
+    const { produits, categories, clients, flash, auth } = usePage<PageProps>().props;
 
     // ── Order state ──
     const [orderLines, setOrderLines] = useState<OrderLine[]>([]);
@@ -179,7 +180,12 @@ export default function PosIndex() {
     }, []);
 
     // ── Barcode scan handler ──
-    const handleBarcodeScan = useCallback(async (barcode: string) => {
+    const handleBarcodeScan = useCallback(async (barcode: string, isRemote = false) => {
+        // If it's a local scan, broadcast to other devices (like computer) in the background
+        if (!isRemote) {
+            axios.post('/pos/broadcast-scan', { code: barcode }).catch(() => {});
+        }
+
         // 1. Try client-side match first (fast)
         const matchedProduct = produits.find(
             (p) => p.code_barre && p.code_barre === barcode
@@ -214,6 +220,27 @@ export default function PosIndex() {
             });
         }
     }, [produits, addProduct]);
+
+    // ── Remote scanner listener (WebSockets) ──
+    useEffect(() => {
+        const userId = auth?.user?.id;
+        // @ts-ignore
+        if (userId && window.Echo) {
+            // @ts-ignore
+            const channel = window.Echo.private(`user.${userId}`);
+            
+            channel.listen('BarcodeScanned', (e: any) => {
+                if (e.barcode) {
+                    console.log('Remote scan received:', e.barcode);
+                    handleBarcodeScan(e.barcode, true);
+                }
+            });
+
+            return () => {
+                channel.stopListening('BarcodeScanned');
+            };
+        }
+    }, [handleBarcodeScan, auth?.user?.id]);
 
     const updateLineQuantity = useCallback((index: number, delta: number) => {
         setOrderLines((prev) =>

@@ -116,4 +116,18 @@ class PosController extends Controller
 
         return redirect()->route('pos.index')->with('success', 'Vente enregistrée avec succès !');
     }
+
+    /**
+     * Diffuse le scan de code-barre aux autres appareils connectés du même utilisateur.
+     */
+    public function broadcastScan(Request $request): JsonResponse
+    {
+        $code = $request->input('code');
+
+        if ($code) {
+            broadcast(new \App\Events\BarcodeScanned(auth()->id(), $code))->toOthers();
+        }
+
+        return response()->json(['success' => true]);
+    }
 }
