@@ -59,8 +59,10 @@ class CommandeService
                 $remiseLigne = $ligne['remise_ligne'] ?? 0;
                 $designation = $variante->modele->name;
 
-                // Ajouter les infos de variante à la désignation si des valeurs existent
-                if ($variante->reference_sku) {
+                // Ajouter le code-barres à la désignation si disponible
+                if ($variante->code_barre) {
+                    $designation .= ' (' . $variante->code_barre . ')';
+                } elseif ($variante->reference_sku) {
                     $designation .= ' (' . $variante->reference_sku . ')';
                 }
 

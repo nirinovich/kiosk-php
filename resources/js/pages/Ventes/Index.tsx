@@ -197,12 +197,23 @@ export default function Index() {
                                         <TableCell className="text-right font-medium tabular-nums">
                                             {formatMoney(Number(commande.montant_ttc))}
                                         </TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge
-                                                variant={commande.statut_facturation === 'facturee' ? 'default' : 'secondary'}
-                                            >
-                                                {commande.statut_facturation === 'facturee' ? 'Facturée' : 'Non facturée'}
-                                            </Badge>
+                                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                                            {commande.statut_facturation === 'facturee' ? (
+                                                <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400">
+                                                    Facturée
+                                                </Badge>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-7 text-xs border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+                                                    onClick={() => {
+                                                        router.patch(ventes.valider(commande.id).url, {}, { preserveScroll: true });
+                                                    }}
+                                                >
+                                                    Valider
+                                                </Button>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))}
