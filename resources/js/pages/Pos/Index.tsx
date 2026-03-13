@@ -16,6 +16,9 @@ import {
     ArrowLeft,
     ScanBarcode,
     XCircle,
+    Printer,
+    FileText,
+    Percent,
 } from 'lucide-react';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { BarcodeScanner } from '@/components/barcode-scanner';
@@ -23,6 +26,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/ui/dialog';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import pos from '@/routes/pos';
@@ -70,13 +81,36 @@ interface OrderLine {
     quantite: number;
     stock: number;
     est_pack: boolean;
+    remise_type: 'percent' | 'fixed';
+    remise_value: number; // Discount value (percentage or MGA amount)
+}
+
+interface CommandeLigne {
+    designation: string;
+    quantite: number;
+    prix_unitaire: number;
+    remise_ligne: number;
+    sous_total: number;
+    taux_tva: number;
+}
+
+interface CommandeData {
+    id: number;
+    numero_commande: string;
+    montant_ht: number;
+    montant_tva: number;
+    montant_ttc: number;
+    remise: number;
+    created_at: string;
+    client: { name: string; telephone: string | null } | null;
+    lignes: CommandeLigne[];
 }
 
 interface PageProps {
     produits: PosProduct[];
     categories: Category[];
     clients: ClientOption[];
-    flash: { success?: string; message?: string };
+    flash: { success?: string; message?: string; commande?: CommandeData };
     auth: { user: { id: number } };
     [key: string]: unknown;
 }
@@ -87,6 +121,165 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const TVA_RATE = 20;
+
+// ─── Helpers ────────────────────────────────────────────────────────────────────
+
+function computeLineDiscount(line: OrderLine): number {
+    const brut = line.prix_unitaire * line.quantite;
+    if (line.remise_type === 'percent') {
+        return Math.round(brut * (line.remise_value / 100));
+    }
+    return Math.min(line.remise_value, brut); // fixed, capped
+}
+
+function computeLineTotal(line: OrderLine): number {
+    return line.prix_unitaire * line.quantite - computeLineDiscount(line);
+}
+
+// ─── Receipt Print ──────────────────────────────────────────────────────────────
+
+function printReceipt(commande: CommandeData, format: 'thermal' | 'a4') {
+    const fmt = (n: number) =>
+        new Intl.NumberFormat('fr-MG', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+    const date = new Date(commande.created_at);
+    const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    if (format === 'thermal') {
+        // ── 80mm thermal receipt ──
+        const w = window.open('', '_blank', 'width=320,height=600');
+        if (!w) return;
+        w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket</title>
+<style>
+  @page { margin: 2mm; size: 80mm auto; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Courier New', monospace; font-size: 12px; width: 76mm; padding: 2mm; color: #000; }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .line { border-top: 1px dashed #000; margin: 4px 0; }
+  .row { display: flex; justify-content: space-between; }
+  .items td { padding: 1px 0; }
+  .items { width: 100%; border-collapse: collapse; }
+  .items .qty { width: 24px; text-align: center; }
+  .items .price { text-align: right; white-space: nowrap; }
+  .total-row { font-size: 14px; font-weight: bold; }
+  .small { font-size: 10px; color: #555; }
+</style></head><body>
+  <div class="center bold" style="font-size:16px;margin-bottom:4px;">🍽️ KIOSK POS</div>
+  <div class="center small">Ticket de caisse</div>
+  <div class="line"></div>
+  <div class="row small"><span>N°: ${commande.numero_commande}</span><span>${dateStr} ${timeStr}</span></div>
+  ${commande.client ? `<div class="small">Client: ${commande.client.name}</div>` : ''}
+  <div class="line"></div>
+  <table class="items">
+    <tbody>
+      ${commande.lignes.map(l => `
+        <tr>
+          <td class="qty">${l.quantite}x</td>
+          <td>${l.designation}</td>
+          <td class="price">${fmt(l.sous_total)}</td>
+        </tr>
+        ${l.remise_ligne > 0 ? `<tr><td></td><td class="small" colspan="2" style="text-align:right;">Remise: -${fmt(l.remise_ligne)}</td></tr>` : ''}
+      `).join('')}
+    </tbody>
+  </table>
+  <div class="line"></div>
+  <div class="row"><span>Sous-total HT</span><span>${fmt(commande.montant_ht)} MGA</span></div>
+  <div class="row"><span>TVA</span><span>${fmt(commande.montant_tva)} MGA</span></div>
+  ${commande.remise > 0 ? `<div class="row"><span>Remise</span><span>-${fmt(commande.remise)} MGA</span></div>` : ''}
+  <div class="line"></div>
+  <div class="row total-row"><span>TOTAL TTC</span><span>${fmt(commande.montant_ttc)} MGA</span></div>
+  <div class="line"></div>
+  <div class="center small" style="margin-top:6px;">Merci de votre visite !</div>
+  <div class="center small">━━━━━━━━━━━━━━━━━━━</div>
+</body></html>`);
+        w.document.close();
+        setTimeout(() => { w.print(); w.close(); }, 400);
+    } else {
+        // ── A4 invoice ──
+        const w = window.open('', '_blank', 'width=800,height=900');
+        if (!w) return;
+        w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Facture ${commande.numero_commande}</title>
+<style>
+  @page { margin: 15mm; size: A4; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a1a1a; max-width: 210mm; margin: 0 auto; padding: 20mm; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
+  .brand { font-size: 28px; font-weight: bold; color: #2563eb; }
+  .brand-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .doc-info { text-align: right; }
+  .doc-title { font-size: 20px; font-weight: bold; color: #111; }
+  .doc-num { font-size: 13px; color: #6b7280; margin-top: 4px; }
+  .client-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; }
+  .client-box .label { font-size: 11px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  thead th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.3px; border-bottom: 2px solid #e5e7eb; }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; }
+  tbody tr:hover { background: #fafafa; }
+  .text-right { text-align: right; }
+  .totals { margin-left: auto; width: 280px; }
+  .totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+  .totals .total-final { font-size: 18px; font-weight: bold; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 6px; }
+  .footer { text-align: center; margin-top: 40px; font-size: 11px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+</style></head><body>
+  <div class="header">
+    <div>
+      <div class="brand">KIOSK POS</div>
+      <div class="brand-sub">Système de Point de Vente</div>
+    </div>
+    <div class="doc-info">
+      <div class="doc-title">FACTURE</div>
+      <div class="doc-num">${commande.numero_commande}</div>
+      <div class="doc-num">${dateStr} à ${timeStr}</div>
+    </div>
+  </div>
+
+  ${commande.client ? `
+  <div class="client-box">
+    <div class="label">Client</div>
+    <div style="font-weight:600;">${commande.client.name}</div>
+    ${commande.client.telephone ? `<div style="color:#6b7280;">${commande.client.telephone}</div>` : ''}
+  </div>` : ''}
+
+  <table>
+    <thead>
+      <tr>
+        <th>Désignation</th>
+        <th class="text-right">P.U.</th>
+        <th class="text-right">Qté</th>
+        <th class="text-right">Remise</th>
+        <th class="text-right">Montant</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${commande.lignes.map(l => `
+        <tr>
+          <td>${l.designation}</td>
+          <td class="text-right">${fmt(l.prix_unitaire)} MGA</td>
+          <td class="text-right">${l.quantite}</td>
+          <td class="text-right">${l.remise_ligne > 0 ? `-${fmt(l.remise_ligne)}` : '—'}</td>
+          <td class="text-right" style="font-weight:600;">${fmt(l.sous_total)} MGA</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="row"><span>Sous-total HT</span><span>${fmt(commande.montant_ht)} MGA</span></div>
+    <div class="row"><span>TVA (${commande.lignes[0]?.taux_tva ?? 20}%)</span><span>${fmt(commande.montant_tva)} MGA</span></div>
+    ${commande.remise > 0 ? `<div class="row"><span>Remise globale</span><span>-${fmt(commande.remise)} MGA</span></div>` : ''}
+    <div class="row total-final"><span>Total TTC</span><span>${fmt(commande.montant_ttc)} MGA</span></div>
+  </div>
+
+  <div class="footer">
+    <p>Merci pour votre confiance !</p>
+    <p style="margin-top:4px;">KIOSK POS — Système de gestion commerciale</p>
+  </div>
+</body></html>`);
+        w.document.close();
+        setTimeout(() => { w.print(); w.close(); }, 400);
+    }
+}
 
 // ─── Component ──────────────────────────────────────────────────────────────────
 
@@ -102,6 +295,7 @@ export default function PosIndex() {
     const [clientSearch, setClientSearch] = useState('');
     const [showClientPicker, setShowClientPicker] = useState(false);
     const [numpadMode, setNumpadMode] = useState<'qty' | 'price' | 'discount'>('qty');
+    const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
     const [numpadBuffer, setNumpadBuffer] = useState('');
     const [showSuccess, setShowSuccess] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -109,6 +303,10 @@ export default function PosIndex() {
     // ── Barcode scanner state ──
     const [scannerOpen, setScannerOpen] = useState(false);
     const [scanToast, setScanToast] = useState<{ type: 'success' | 'not_found'; message: string; code: string } | null>(null);
+
+    // ── Receipt dialog state ──
+    const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+    const [lastCommande, setLastCommande] = useState<CommandeData | null>(null);
 
     // ── Form ──
     const { post, processing } = useForm();
@@ -118,9 +316,14 @@ export default function PosIndex() {
         if (flash.success) {
             setShowSuccess(true);
             const timer = setTimeout(() => setShowSuccess(false), 3000);
+            // If a commande was returned, show the receipt dialog
+            if (flash.commande) {
+                setLastCommande(flash.commande);
+                setReceiptDialogOpen(true);
+            }
             return () => clearTimeout(timer);
         }
-    }, [flash.success]);
+    }, [flash.success, flash.commande]);
 
     // ── Scan toast auto-dismiss ──
     useEffect(() => {
@@ -178,6 +381,8 @@ export default function PosIndex() {
                     quantite: 1,
                     stock: product.stock,
                     est_pack: product.est_pack,
+                    remise_type: 'percent',
+                    remise_value: 0,
                 },
             ];
         });
@@ -292,6 +497,14 @@ export default function PosIndex() {
 
             if (key === 'C') {
                 setNumpadBuffer('');
+                // Also reset discount on the selected line
+                if (selectedLine !== null && numpadMode === 'discount') {
+                    setOrderLines((prev) =>
+                        prev.map((l, i) =>
+                            i === selectedLine ? { ...l, remise_value: 0 } : l
+                        )
+                    );
+                }
                 return;
             }
 
@@ -323,9 +536,19 @@ export default function PosIndex() {
                         i === selectedLine ? { ...l, prix_unitaire: value } : l
                     )
                 );
+            } else if (numpadMode === 'discount') {
+                // Clamp percentage to 100
+                const clampedValue = discountType === 'percent' ? Math.min(value, 100) : value;
+                setOrderLines((prev) =>
+                    prev.map((l, i) =>
+                        i === selectedLine
+                            ? { ...l, remise_type: discountType, remise_value: clampedValue }
+                            : l
+                    )
+                );
             }
         },
-        [selectedLine, numpadMode, numpadBuffer]
+        [selectedLine, numpadMode, numpadBuffer, discountType]
     );
 
     const switchNumpadMode = useCallback((mode: 'qty' | 'price' | 'discount') => {
@@ -335,7 +558,11 @@ export default function PosIndex() {
 
     // ── Totals ──
     const subtotal = useMemo(
-        () => orderLines.reduce((sum, l) => sum + l.prix_unitaire * l.quantite, 0),
+        () => orderLines.reduce((sum, l) => sum + computeLineTotal(l), 0),
+        [orderLines]
+    );
+    const totalDiscount = useMemo(
+        () => orderLines.reduce((sum, l) => sum + computeLineDiscount(l), 0),
         [orderLines]
     );
     const tva = useMemo(() => subtotal * (TVA_RATE / 100), [subtotal]);
@@ -352,7 +579,7 @@ export default function PosIndex() {
                 quantite: l.quantite,
                 prix_unitaire: l.prix_unitaire,
                 taux_tva: TVA_RATE,
-                remise_ligne: 0,
+                remise_ligne: computeLineDiscount(l),
             })),
         };
 
@@ -360,6 +587,7 @@ export default function PosIndex() {
             preserveScroll: true,
             onSuccess: () => {
                 clearOrder();
+                // Receipt dialog will be triggered by the flash effect
             },
         });
     }
@@ -403,6 +631,71 @@ export default function PosIndex() {
                 onClose={() => setScannerOpen(false)}
                 onScan={handleBarcodeScan}
             />
+
+            {/* ═══════════ RECEIPT DIALOG ═══════════ */}
+            <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            Vente enregistrée !
+                        </DialogTitle>
+                        <DialogDescription>
+                            {lastCommande && (
+                                <span>
+                                    Commande <strong className="text-foreground">{lastCommande.numero_commande}</strong>
+                                    {' — '}
+                                    <strong className="text-foreground">
+                                        {new Intl.NumberFormat('fr-MG').format(lastCommande.montant_ttc)} MGA
+                                    </strong>
+                                </span>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-3 py-2">
+                        <p className="text-sm text-muted-foreground text-center">
+                            Souhaitez-vous imprimer un document ?
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Button
+                                variant="outline"
+                                className="h-20 flex-col gap-2 border-2 hover:border-primary/50 hover:bg-primary/5"
+                                onClick={() => {
+                                    if (lastCommande) printReceipt(lastCommande, 'thermal');
+                                }}
+                            >
+                                <Printer className="h-6 w-6 text-primary" />
+                                <span className="text-xs font-medium">Ticket de caisse</span>
+                                <span className="text-[10px] text-muted-foreground">Imprimante thermique</span>
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                className="h-20 flex-col gap-2 border-2 hover:border-primary/50 hover:bg-primary/5"
+                                onClick={() => {
+                                    if (lastCommande) printReceipt(lastCommande, 'a4');
+                                }}
+                            >
+                                <FileText className="h-6 w-6 text-primary" />
+                                <span className="text-xs font-medium">Facture A4</span>
+                                <span className="text-[10px] text-muted-foreground">Format standard</span>
+                            </Button>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="ghost"
+                            className="w-full"
+                            onClick={() => setReceiptDialogOpen(false)}
+                        >
+                            Fermer sans imprimer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
                 {/* ═══════════ LEFT PANEL — Order ═══════════ */}
@@ -506,47 +799,63 @@ export default function PosIndex() {
                             </div>
                         ) : (
                             <div className="divide-y divide-border">
-                                {orderLines.map((line, index) => (
-                                    <button
-                                        key={line.id_variante}
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedLine(selectedLine === index ? null : index);
-                                            setNumpadBuffer('');
-                                        }}
-                                        className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${
-                                            selectedLine === index
-                                                ? 'bg-primary/10 ring-1 ring-inset ring-primary/30'
-                                                : 'hover:bg-accent/50'
-                                        }`}
-                                    >
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-xs font-bold text-muted-foreground">
-                                            {line.quantite}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="truncate text-sm font-medium">{line.nom}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {fmt(line.prix_unitaire)} × {line.quantite}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm font-semibold">
-                                                {fmt(line.prix_unitaire * line.quantite)}
-                                            </span>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    removeLine(index);
-                                                }}
-                                            >
-                                                <X className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
-                                    </button>
-                                ))}
+                                {orderLines.map((line, index) => {
+                                    const lineDiscount = computeLineDiscount(line);
+                                    const lineTotal = computeLineTotal(line);
+                                    return (
+                                        <button
+                                            key={line.id_variante}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedLine(selectedLine === index ? null : index);
+                                                setNumpadBuffer('');
+                                            }}
+                                            className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${
+                                                selectedLine === index
+                                                    ? 'bg-primary/10 ring-1 ring-inset ring-primary/30'
+                                                    : 'hover:bg-accent/50'
+                                            }`}
+                                        >
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-xs font-bold text-muted-foreground">
+                                                {line.quantite}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="truncate text-sm font-medium">{line.nom}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {fmt(line.prix_unitaire)} × {line.quantite}
+                                                    {lineDiscount > 0 && (
+                                                        <span className="ml-1 text-orange-500">
+                                                            -{line.remise_type === 'percent' ? `${line.remise_value}%` : fmt(line.remise_value)}
+                                                        </span>
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-right">
+                                                    {lineDiscount > 0 && (
+                                                        <span className="block text-xs text-muted-foreground line-through">
+                                                            {fmt(line.prix_unitaire * line.quantite)}
+                                                        </span>
+                                                    )}
+                                                    <span className="text-sm font-semibold">
+                                                        {fmt(lineTotal)}
+                                                    </span>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        removeLine(index);
+                                                    }}
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -569,9 +878,56 @@ export default function PosIndex() {
                                         </Button>
                                     ))}
                                 </div>
+
+                                {/* Discount type toggle (only when discount mode is active) */}
+                                {numpadMode === 'discount' && (
+                                    <div className="flex gap-1 mt-2">
+                                        <Button
+                                            variant={discountType === 'percent' ? 'default' : 'outline'}
+                                            size="sm"
+                                            className="flex-1 text-xs"
+                                            onClick={() => {
+                                                setDiscountType('percent');
+                                                setNumpadBuffer('');
+                                                if (selectedLine !== null) {
+                                                    setOrderLines((prev) =>
+                                                        prev.map((l, i) =>
+                                                            i === selectedLine ? { ...l, remise_type: 'percent', remise_value: 0 } : l
+                                                        )
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            <Percent className="h-3 w-3 mr-1" />
+                                            Pourcentage
+                                        </Button>
+                                        <Button
+                                            variant={discountType === 'fixed' ? 'default' : 'outline'}
+                                            size="sm"
+                                            className="flex-1 text-xs"
+                                            onClick={() => {
+                                                setDiscountType('fixed');
+                                                setNumpadBuffer('');
+                                                if (selectedLine !== null) {
+                                                    setOrderLines((prev) =>
+                                                        prev.map((l, i) =>
+                                                            i === selectedLine ? { ...l, remise_type: 'fixed', remise_value: 0 } : l
+                                                        )
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            <Minus className="h-3 w-3 mr-1" />
+                                            Montant fixe
+                                        </Button>
+                                    </div>
+                                )}
+
                                 {numpadBuffer && (
                                     <p className="mt-1 text-center text-xs text-muted-foreground">
-                                        {numpadMode === 'qty' ? 'Quantité' : numpadMode === 'price' ? 'Prix' : 'Remise'}: {numpadBuffer}
+                                        {numpadMode === 'qty' ? 'Quantité' : numpadMode === 'price' ? 'Prix' : (
+                                            discountType === 'percent' ? 'Remise (%)' : 'Remise (MGA)'
+                                        )}: {numpadBuffer}
                                     </p>
                                 )}
                             </div>
@@ -604,8 +960,14 @@ export default function PosIndex() {
                         <div className="space-y-1 px-4 py-3">
                             <div className="flex items-center justify-between text-sm text-muted-foreground">
                                 <span>Sous-total</span>
-                                <span>{fmt(subtotal)}</span>
+                                <span>{fmt(orderLines.reduce((s, l) => s + l.prix_unitaire * l.quantite, 0))}</span>
                             </div>
+                            {totalDiscount > 0 && (
+                                <div className="flex items-center justify-between text-sm text-orange-500">
+                                    <span>Remises</span>
+                                    <span>-{fmt(totalDiscount)}</span>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between text-sm text-muted-foreground">
                                 <span>TVA ({TVA_RATE}%)</span>
                                 <span>{fmt(tva)}</span>

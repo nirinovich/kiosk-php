@@ -107,9 +107,32 @@ class PosController extends Controller
      */
     public function store(StoreCommandeRequest $request)
     {
-        $this->commandeService->creerCommande($request->validated());
+        $commande = $this->commandeService->creerCommande($request->validated());
 
-        return redirect()->route('pos.index')->with('success', 'Vente enregistrée avec succès !');
+        return redirect()->route('pos.index')->with([
+            'success' => 'Vente enregistrée avec succès !',
+            'commande' => [
+                'id' => $commande->id,
+                'numero_commande' => $commande->numero_commande,
+                'montant_ht' => $commande->montant_ht,
+                'montant_tva' => $commande->montant_tva,
+                'montant_ttc' => $commande->montant_ttc,
+                'remise' => $commande->remise,
+                'created_at' => $commande->created_at->toISOString(),
+                'client' => $commande->client ? [
+                    'name' => $commande->client->name,
+                    'telephone' => $commande->client->telephone ?? null,
+                ] : null,
+                'lignes' => $commande->lignes->map(fn ($l) => [
+                    'designation' => $l->designation,
+                    'quantite' => $l->quantite,
+                    'prix_unitaire' => $l->prix_unitaire,
+                    'remise_ligne' => $l->remise_ligne,
+                    'sous_total' => $l->sous_total,
+                    'taux_tva' => $l->taux_tva,
+                ])->toArray(),
+            ],
+        ]);
     }
 
     /**
