@@ -75,6 +75,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/ventes/create', [CommandeController::class, 'create'])->name('ventes.create');
     Route::post('/ventes', [CommandeController::class, 'store'])->name('ventes.store');
     Route::get('/ventes/{commande}', [CommandeController::class, 'show'])->name('ventes.show');
+    Route::patch('/ventes/{commande}/valider', [CommandeController::class, 'valider'])->name('ventes.valider');
 
     // Factures
     Route::post('/factures', [FactureController::class, 'store'])->name('factures.store');

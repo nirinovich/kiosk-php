@@ -38,6 +38,7 @@ import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import pos from '@/routes/pos';
 import type { BreadcrumbItem } from '@/types';
+import { printReceipt, type Entreprise } from '@/lib/print-receipt';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -106,22 +107,6 @@ interface CommandeData {
     lignes: CommandeLigne[];
 }
 
-interface PageProps {
-    produits: PosProduct[];
-    categories: Category[];
-    clients: ClientOption[];
-    flash: { success?: string; message?: string; commande?: CommandeData };
-    auth: { user: { id: number } };
-    [key: string]: unknown;
-}
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: dashboard().url },
-    { title: 'Point de vente', href: pos.index().url },
-];
-
-const TVA_RATE = 20;
-
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
 function computeLineDiscount(line: OrderLine): number {
@@ -136,155 +121,27 @@ function computeLineTotal(line: OrderLine): number {
     return line.prix_unitaire * line.quantite - computeLineDiscount(line);
 }
 
-// ─── Receipt Print ──────────────────────────────────────────────────────────────
-
-function printReceipt(commande: CommandeData, format: 'thermal' | 'a4') {
-    const fmt = (n: number) =>
-        new Intl.NumberFormat('fr-MG', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
-    const date = new Date(commande.created_at);
-    const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-
-    if (format === 'thermal') {
-        // ── 80mm thermal receipt ──
-        const w = window.open('', '_blank', 'width=320,height=600');
-        if (!w) return;
-        w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket</title>
-<style>
-  @page { margin: 2mm; size: 80mm auto; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Courier New', monospace; font-size: 12px; width: 76mm; padding: 2mm; color: #000; }
-  .center { text-align: center; }
-  .bold { font-weight: bold; }
-  .line { border-top: 1px dashed #000; margin: 4px 0; }
-  .row { display: flex; justify-content: space-between; }
-  .items td { padding: 1px 0; }
-  .items { width: 100%; border-collapse: collapse; }
-  .items .qty { width: 24px; text-align: center; }
-  .items .price { text-align: right; white-space: nowrap; }
-  .total-row { font-size: 14px; font-weight: bold; }
-  .small { font-size: 10px; color: #555; }
-</style></head><body>
-  <div class="center bold" style="font-size:16px;margin-bottom:4px;">🍽️ KIOSK POS</div>
-  <div class="center small">Ticket de caisse</div>
-  <div class="line"></div>
-  <div class="row small"><span>N°: ${commande.numero_commande}</span><span>${dateStr} ${timeStr}</span></div>
-  ${commande.client ? `<div class="small">Client: ${commande.client.name}</div>` : ''}
-  <div class="line"></div>
-  <table class="items">
-    <tbody>
-      ${commande.lignes.map(l => `
-        <tr>
-          <td class="qty">${l.quantite}x</td>
-          <td>${l.designation}</td>
-          <td class="price">${fmt(l.sous_total)}</td>
-        </tr>
-        ${l.remise_ligne > 0 ? `<tr><td></td><td class="small" colspan="2" style="text-align:right;">Remise: -${fmt(l.remise_ligne)}</td></tr>` : ''}
-      `).join('')}
-    </tbody>
-  </table>
-  <div class="line"></div>
-  <div class="row"><span>Sous-total HT</span><span>${fmt(commande.montant_ht)} MGA</span></div>
-  <div class="row"><span>TVA</span><span>${fmt(commande.montant_tva)} MGA</span></div>
-  ${commande.remise > 0 ? `<div class="row"><span>Remise</span><span>-${fmt(commande.remise)} MGA</span></div>` : ''}
-  <div class="line"></div>
-  <div class="row total-row"><span>TOTAL TTC</span><span>${fmt(commande.montant_ttc)} MGA</span></div>
-  <div class="line"></div>
-  <div class="center small" style="margin-top:6px;">Merci de votre visite !</div>
-  <div class="center small">━━━━━━━━━━━━━━━━━━━</div>
-</body></html>`);
-        w.document.close();
-        setTimeout(() => { w.print(); w.close(); }, 400);
-    } else {
-        // ── A4 invoice ──
-        const w = window.open('', '_blank', 'width=800,height=900');
-        if (!w) return;
-        w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Facture ${commande.numero_commande}</title>
-<style>
-  @page { margin: 15mm; size: A4; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a1a1a; max-width: 210mm; margin: 0 auto; padding: 20mm; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
-  .brand { font-size: 28px; font-weight: bold; color: #2563eb; }
-  .brand-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
-  .doc-info { text-align: right; }
-  .doc-title { font-size: 20px; font-weight: bold; color: #111; }
-  .doc-num { font-size: 13px; color: #6b7280; margin-top: 4px; }
-  .client-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; }
-  .client-box .label { font-size: 11px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; margin-bottom: 4px; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-  thead th { background: #f3f4f6; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.3px; border-bottom: 2px solid #e5e7eb; }
-  tbody td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; }
-  tbody tr:hover { background: #fafafa; }
-  .text-right { text-align: right; }
-  .totals { margin-left: auto; width: 280px; }
-  .totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
-  .totals .total-final { font-size: 18px; font-weight: bold; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 10px; margin-top: 6px; }
-  .footer { text-align: center; margin-top: 40px; font-size: 11px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 16px; }
-</style></head><body>
-  <div class="header">
-    <div>
-      <div class="brand">KIOSK POS</div>
-      <div class="brand-sub">Système de Point de Vente</div>
-    </div>
-    <div class="doc-info">
-      <div class="doc-title">FACTURE</div>
-      <div class="doc-num">${commande.numero_commande}</div>
-      <div class="doc-num">${dateStr} à ${timeStr}</div>
-    </div>
-  </div>
-
-  ${commande.client ? `
-  <div class="client-box">
-    <div class="label">Client</div>
-    <div style="font-weight:600;">${commande.client.name}</div>
-    ${commande.client.telephone ? `<div style="color:#6b7280;">${commande.client.telephone}</div>` : ''}
-  </div>` : ''}
-
-  <table>
-    <thead>
-      <tr>
-        <th>Désignation</th>
-        <th class="text-right">P.U.</th>
-        <th class="text-right">Qté</th>
-        <th class="text-right">Remise</th>
-        <th class="text-right">Montant</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${commande.lignes.map(l => `
-        <tr>
-          <td>${l.designation}</td>
-          <td class="text-right">${fmt(l.prix_unitaire)} MGA</td>
-          <td class="text-right">${l.quantite}</td>
-          <td class="text-right">${l.remise_ligne > 0 ? `-${fmt(l.remise_ligne)}` : '—'}</td>
-          <td class="text-right" style="font-weight:600;">${fmt(l.sous_total)} MGA</td>
-        </tr>
-      `).join('')}
-    </tbody>
-  </table>
-
-  <div class="totals">
-    <div class="row"><span>Sous-total HT</span><span>${fmt(commande.montant_ht)} MGA</span></div>
-    <div class="row"><span>TVA (${commande.lignes[0]?.taux_tva ?? 20}%)</span><span>${fmt(commande.montant_tva)} MGA</span></div>
-    ${commande.remise > 0 ? `<div class="row"><span>Remise globale</span><span>-${fmt(commande.remise)} MGA</span></div>` : ''}
-    <div class="row total-final"><span>Total TTC</span><span>${fmt(commande.montant_ttc)} MGA</span></div>
-  </div>
-
-  <div class="footer">
-    <p>Merci pour votre confiance !</p>
-    <p style="margin-top:4px;">KIOSK POS — Système de gestion commerciale</p>
-  </div>
-</body></html>`);
-        w.document.close();
-        setTimeout(() => { w.print(); w.close(); }, 400);
-    }
+interface PageProps {
+    produits: PosProduct[];
+    categories: Category[];
+    clients: ClientOption[];
+    entreprise: Entreprise | null;
+    flash: { success?: string; message?: string; commande?: CommandeData };
+    auth: { user: { id: number } };
+    [key: string]: unknown;
 }
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: dashboard().url },
+    { title: 'Point de vente', href: pos.index().url },
+];
+
+const TVA_RATE = 20;
 
 // ─── Component ──────────────────────────────────────────────────────────────────
 
 export default function PosIndex() {
-    const { produits, categories, clients, flash, auth } = usePage<PageProps>().props;
+    const { produits, categories, clients, entreprise, flash, auth } = usePage<PageProps>().props;
 
     // ── Order state ──
     const [orderLines, setOrderLines] = useState<OrderLine[]>([]);
@@ -676,7 +533,7 @@ export default function PosIndex() {
                                 variant="outline"
                                 className="h-20 flex-col gap-2 border-2 hover:border-primary/50 hover:bg-primary/5"
                                 onClick={() => {
-                                    if (lastCommande) printReceipt(lastCommande, 'thermal');
+                                    if (lastCommande) printReceipt(lastCommande, 'thermal', entreprise);
                                 }}
                             >
                                 <Printer className="h-6 w-6 text-primary" />
@@ -688,7 +545,7 @@ export default function PosIndex() {
                                 variant="outline"
                                 className="h-20 flex-col gap-2 border-2 hover:border-primary/50 hover:bg-primary/5"
                                 onClick={() => {
-                                    if (lastCommande) printReceipt(lastCommande, 'a4');
+                                    if (lastCommande) printReceipt(lastCommande, 'a4', entreprise);
                                 }}
                             >
                                 <FileText className="h-6 w-6 text-primary" />

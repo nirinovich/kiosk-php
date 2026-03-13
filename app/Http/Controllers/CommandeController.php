@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCommandeRequest;
 use App\Models\Client;
 use App\Models\Commande;
+use App\Models\ParametresEntreprise;
 use App\Models\ProduitVariante;
 use App\Services\CommandeService;
 use Illuminate\Http\Request;
@@ -104,8 +105,31 @@ class CommandeController extends Controller
     {
         $commande->load('lignes', 'client', 'facture');
 
+        $entreprise = ParametresEntreprise::first();
+
         return Inertia::render('Ventes/Show', [
             'commande' => $commande,
+            'entreprise' => $entreprise ? [
+                'nom'            => $entreprise->nom_commercial,
+                'adresse'        => $entreprise->adresse,
+                'telephone'      => $entreprise->telephone,
+                'email'          => $entreprise->email,
+                'nif'            => $entreprise->nif,
+                'stat'           => $entreprise->stat,
+                'logo_url'       => $entreprise->logo_url,
+                'note_pied_page' => $entreprise->note_pied_page,
+            ] : null,
         ]);
+    }
+
+    /**
+     * Marquer manuellement une commande comme facturée.
+     */
+    public function valider(Commande $commande)
+    {
+        $commande->update(['statut_facturation' => 'facturee']);
+
+        return redirect()->route('ventes.show', $commande)
+            ->with('success', 'Commande marquée comme facturée.');
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Categorie;
 use App\Models\Client;
 use App\Models\ProduitModele;
 use App\Models\ProduitVariante;
+use App\Models\ParametresEntreprise;
 use App\Services\CommandeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -50,11 +51,22 @@ class PosController extends Controller
             
         $categories = Categorie::orderBy('nom')->get(['id_categorie', 'nom']);
         $clients = Client::orderBy('name')->get(['id_client', 'name']);
+        $entreprise = ParametresEntreprise::first();
 
         return Inertia::render('Pos/Index', [
             'produits' => $produits->values(),
             'categories' => $categories,
             'clients' => $clients,
+            'entreprise' => $entreprise ? [
+                'nom' => $entreprise->nom_commercial,
+                'adresse' => $entreprise->adresse,
+                'telephone' => $entreprise->telephone,
+                'email' => $entreprise->email,
+                'nif' => $entreprise->nif,
+                'stat' => $entreprise->stat,
+                'logo_url' => $entreprise->logo_url,
+                'note_pied_page' => $entreprise->note_pied_page,
+            ] : null,
         ]);
     }
 
