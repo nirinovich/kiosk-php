@@ -59,7 +59,11 @@ class StockService
                 return [
                     'id_variante' => $v->id_variante,
                     'reference_sku' => $v->reference_sku,
-                    'modele' => ['name' => $v->modele->name],
+                    'modele' => [
+                        'name' => $v->modele->name,
+                        'image_url' => $v->modele->image_url,
+                        'unite_mesure' => $v->modele->unite_mesure,
+                    ],
                     'stock_reel' => $v->stock_reel,
                     'est_pack' => $v->est_pack, 
                     'stock_disponible' => $v->stock_disponible,
