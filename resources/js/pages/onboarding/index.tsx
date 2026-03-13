@@ -47,7 +47,7 @@ export default function OnboardingIndex() {
             <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted p-4">
                 <div className="w-full max-w-lg space-y-8">
                     {/* Logo + progress */}
-                    <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-col items-center gap-8">
                         <KioskLogo size="lg" />
                         <StepIndicator current={step} />
                     </div>
@@ -76,13 +76,12 @@ function StepIndicator({ current }: { current: number }) {
                     <div key={label} className="flex items-center gap-1">
                         {i > 0 && <span className="mx-1 text-border">—</span>}
                         <span
-                            className={`flex size-6 items-center justify-center rounded-full text-xs font-semibold ${
-                                done
-                                    ? 'bg-primary text-primary-foreground'
-                                    : active
-                                      ? 'border-2 border-primary text-primary'
-                                      : 'border border-border text-muted-foreground'
-                            }`}
+                            className={`flex size-6 items-center justify-center rounded-full text-xs font-semibold ${done
+                                ? 'bg-primary text-primary-foreground'
+                                : active
+                                    ? 'border-2 border-primary text-primary'
+                                    : 'border border-border text-muted-foreground'
+                                }`}
                         >
                             {done ? '✓' : n}
                         </span>
