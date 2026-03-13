@@ -633,8 +633,21 @@ export default function PosIndex() {
             />
 
             {/* ═══════════ RECEIPT DIALOG ═══════════ */}
-            <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
-                <DialogContent className="sm:max-w-md">
+            <Dialog open={receiptDialogOpen} onOpenChange={() => {}}>
+                <DialogContent
+                    className="sm:max-w-md"
+                    showCloseButton={false}
+                    onInteractOutside={(e) => e.preventDefault()}
+                    onEscapeKeyDown={(e) => e.preventDefault()}
+                >
+                    {/* Custom close button */}
+                    <button
+                        onClick={() => setReceiptDialogOpen(false)}
+                        className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
+                    >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                    </button>
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <CheckCircle className="h-5 w-5 text-green-500" />
